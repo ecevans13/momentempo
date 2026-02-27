@@ -1,0 +1,32 @@
+# Secrets — never commit
+.env
+
+# Database files
+backend/data/
+
+# Runtime logs
+backend/logs/
+
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Test cache
+.pytest_cache/
+
+# Package build artifacts
+*.egg-info/
+
+# Ruff cache
+.ruff_cache/
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
