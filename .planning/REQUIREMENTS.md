@@ -91,32 +91,32 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | — | Pending |
-| DATA-02 | — | Pending |
-| DATA-03 | — | Pending |
-| DATA-04 | — | Pending |
-| DATA-05 | — | Pending |
-| DASH-01 | — | Pending |
-| DASH-02 | — | Pending |
-| DASH-03 | — | Pending |
-| DASH-04 | — | Pending |
-| DRLL-01 | — | Pending |
-| DRLL-02 | — | Pending |
-| GEAR-01 | — | Pending |
-| GEAR-02 | — | Pending |
-| TRPH-01 | — | Pending |
-| TRPH-02 | — | Pending |
-| TRPH-03 | — | Pending |
-| UIUX-01 | — | Pending |
-| UIUX-02 | — | Pending |
-| UIUX-03 | — | Pending |
-| UIUX-04 | — | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 2 | Pending |
+| DATA-04 | Phase 2 | Pending |
+| DATA-05 | Phase 2 | Pending |
+| DASH-01 | Phase 3 | Pending |
+| DASH-02 | Phase 3 | Pending |
+| DASH-03 | Phase 3 | Pending |
+| DASH-04 | Phase 3 | Pending |
+| DRLL-01 | Phase 4 | Pending |
+| DRLL-02 | Phase 4 | Pending |
+| GEAR-01 | Phase 5 | Pending |
+| GEAR-02 | Phase 5 | Pending |
+| TRPH-01 | Phase 5 | Pending |
+| TRPH-02 | Phase 5 | Pending |
+| TRPH-03 | Phase 5 | Pending |
+| UIUX-01 | Phase 3 | Pending |
+| UIUX-02 | Phase 3 | Pending |
+| UIUX-03 | Phase 3 | Pending |
+| UIUX-04 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20
+- Mapped to phases: 20
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 after initial definition*
+*Last updated: 2026-02-27 after roadmap creation — all 20 requirements mapped*
