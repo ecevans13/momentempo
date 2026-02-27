@@ -31,7 +31,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. On a subsequent start, the app uses the stored token without prompting for OAuth again
   4. When the access token is expired, the app silently refreshes it and continues without user intervention
   5. A health check endpoint (`/api/health`) returns a valid response, confirming the backend is running
-**Plans**: TBD
+**Plans**: 2 plans
+  - [ ] 01-01-PLAN.md — Project scaffold, config, database, Token model, logging, test infrastructure
+  - [ ] 01-02-PLAN.md — Strava OAuth flow, token refresh, health check, test suite
 
 ### Phase 2: Data Pipeline
 **Goal**: All historical activity data is fetched from Strava and cached locally, with an incremental sync that respects rate limits so the app never hammers the API.
@@ -98,7 +100,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation and Auth | 0/TBD | Not started | - |
+| 1. Foundation and Auth | 0/2 | Planned | - |
 | 2. Data Pipeline | 0/TBD | Not started | - |
 | 3. Core Dashboard | 0/TBD | Not started | - |
 | 4. Activity Drill-Down | 0/TBD | Not started | - |
