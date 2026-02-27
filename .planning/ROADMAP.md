@@ -12,7 +12,7 @@ StravaViz is built in strict dependency order: auth unblocks data, data unblocks
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation and Auth** - Project scaffold, Strava OAuth, and token management
+- [x] **Phase 1: Foundation and Auth** - Project scaffold, Strava OAuth, and token management (completed 2026-02-27)
 - [ ] **Phase 2: Data Pipeline** - Full-history backfill, incremental sync, and rate-limit enforcement
 - [ ] **Phase 3: Core Dashboard** - Backend API, frontend scaffold, key metrics, trends, and activity feed
 - [ ] **Phase 4: Activity Drill-Down** - Per-activity splits, HR charts, and zone breakdown
@@ -100,7 +100,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation and Auth | 1/2 | In Progress|  |
+| 1. Foundation and Auth | 2/2 | Complete   | 2026-02-27 |
 | 2. Data Pipeline | 0/TBD | Not started | - |
 | 3. Core Dashboard | 0/TBD | Not started | - |
 | 4. Activity Drill-Down | 0/TBD | Not started | - |

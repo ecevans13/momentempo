@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 1 of 6 (Foundation and Auth)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-27 — Plan 01-01 complete: FastAPI scaffold with SQLModel Token table and pytest fixtures
+Last activity: 2026-02-27 — Plan 01-02 complete: Strava OAuth flow, token refresh, health endpoint, 16-test suite
 
-Progress: [█░░░░░░░░░] 5%
+Progress: [██░░░░░░░░] 10%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 3 min
-- Total execution time: 3 min
+- Total plans completed: 2
+- Average duration: 2.5 min
+- Total execution time: 5 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation-and-auth | 1 | 3 min | 3 min |
+| 01-foundation-and-auth | 2 | 5 min | 2.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (3 min)
+- Last 5 plans: 01-01 (3 min), 01-02 (2 min)
 - Trend: —
 
 *Updated after each plan completion*
@@ -49,6 +49,9 @@ Recent decisions affecting current work:
 - [01-01]: Engine stored on app.state (not module-level) to prevent test isolation problems
 - [01-01]: backend/__init__.py added to support backend.app.* import pattern from project root
 - [01-01]: Token table uses singleton pattern (id=1) — one row upserted during OAuth, no multi-user complexity
+- [01-02]: get_db_session uses request.app.state.engine directly (not get_session) for TestClient compatibility
+- [01-02]: bootstrap_auth sleeps 1s before webbrowser.open() to let uvicorn finish port binding
+- [01-02]: ensure_valid_token catches Exception (not just httpx.HTTPError) for full network error resilience
 
 ### Pending Todos
 
@@ -63,5 +66,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 01-01-PLAN.md — FastAPI scaffold with SQLModel Token table and pytest fixtures
-Resume file: .planning/phases/01-foundation-and-auth/01-02-PLAN.md (next plan)
+Stopped at: Completed 01-02-PLAN.md — Strava OAuth flow, token refresh, health endpoint, 16-test suite
+Resume file: .planning/phases/01-foundation-and-auth/01-03-PLAN.md (next plan)
