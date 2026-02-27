@@ -6,7 +6,9 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .config import get_settings
 from .database import create_db_and_tables, get_engine
+from .routers import auth
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,18 @@ async def lifespan(app: FastAPI):
 
     logger.info("StravaViz backend started")
 
+    # Bootstrap authentication — opens browser on first run, refreshes silently on
+    # subsequent runs, stays completely silent when a valid token exists.
+    try:
+        from .services.strava_auth import bootstrap_auth
+
+        await bootstrap_auth(engine, get_settings())
+    except Exception as exc:
+        logger.error(
+            "Auth bootstrap failed: %s — visit /auth/login to authenticate manually",
+            exc,
+        )
+
     yield
 
     # Shutdown
@@ -75,7 +89,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers are registered here — add new routers without modifying existing code
-routers = []
-for router in routers:
-    app.include_router(router)
+# Routers
+app.include_router(auth.router)
