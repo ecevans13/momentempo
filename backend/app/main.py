@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .database import create_db_and_tables, get_engine
-from .routers import auth, health
+from .routers import auth, health, sync
 
 logger = logging.getLogger(__name__)
 
@@ -92,3 +92,4 @@ app.add_middleware(
 # Routers
 app.include_router(auth.router)
 app.include_router(health.router)
+app.include_router(sync.router)
