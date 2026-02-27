@@ -9,7 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Data Infrastructure
 
-- [ ] **DATA-01**: App authenticates with Strava via OAuth and persists tokens to SQLite
+- [x] **DATA-01**: App authenticates with Strava via OAuth and persists tokens to SQLite
 - [ ] **DATA-02**: App silently refreshes expired access tokens using stored refresh token
 - [ ] **DATA-03**: App performs full-history backfill of all activities on first use (paginated, rate-limit-aware)
 - [ ] **DATA-04**: App caches activity data in SQLite with incremental sync (only fetch new activities)
@@ -91,7 +91,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Pending |
 | DATA-03 | Phase 2 | Pending |
 | DATA-04 | Phase 2 | Pending |
