@@ -5,6 +5,7 @@ import Layout from "./components/Layout";
 import MetricCards from "./components/MetricCards";
 import TrendChart from "./components/TrendChart";
 import ActivityFeed from "./components/ActivityFeed";
+import ActivityDetail from "./components/ActivityDetail";
 import ErrorBoundary from "./components/ErrorBoundary";
 import SportFilter from "./components/SportFilter";
 
@@ -12,6 +13,7 @@ export default function App() {
   const { theme, toggleTheme } = useTheme();
   const [firstName, setFirstName] = useState<string | null>(null);
   const [sportType, setSportType] = useState("");
+  const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/health")
@@ -30,18 +32,32 @@ export default function App() {
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100">
       <Header theme={theme} toggleTheme={toggleTheme} firstName={firstName} />
       <Layout>
-        <div className="flex items-center justify-end mb-2">
-          <SportFilter value={sportType} onChange={setSportType} />
-        </div>
-        <ErrorBoundary>
-          <MetricCards />
-        </ErrorBoundary>
-        <ErrorBoundary>
-          <TrendChart sportType={sportOrUndefined} />
-        </ErrorBoundary>
-        <ErrorBoundary>
-          <ActivityFeed sportType={sportOrUndefined} />
-        </ErrorBoundary>
+        {selectedActivityId !== null ? (
+          <ErrorBoundary>
+            <ActivityDetail
+              activityId={selectedActivityId}
+              onBack={() => setSelectedActivityId(null)}
+            />
+          </ErrorBoundary>
+        ) : (
+          <>
+            <div className="flex items-center justify-end mb-2">
+              <SportFilter value={sportType} onChange={setSportType} />
+            </div>
+            <ErrorBoundary>
+              <MetricCards />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <TrendChart sportType={sportOrUndefined} />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <ActivityFeed
+                sportType={sportOrUndefined}
+                onSelectActivity={setSelectedActivityId}
+              />
+            </ErrorBoundary>
+          </>
+        )}
       </Layout>
     </div>
   );

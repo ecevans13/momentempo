@@ -2,6 +2,8 @@ import type {
   SummaryResponse,
   TrendsResponse,
   ActivitiesResponse,
+  ActivityDetailResponse,
+  ZonesResponse,
   SyncStatusResponse,
   SyncTriggerResponse,
   Period,
@@ -55,4 +57,12 @@ export function fetchSyncStatus(): Promise<SyncStatusResponse> {
 
 export function triggerSync(): Promise<SyncTriggerResponse> {
   return fetchJSON("/api/sync", { method: "POST" });
+}
+
+export function fetchActivityDetail(id: number): Promise<ActivityDetailResponse> {
+  return fetchJSON(`/api/activity/${id}`);
+}
+
+export function fetchActivityZones(id: number): Promise<ZonesResponse> {
+  return fetchJSON(`/api/activity/${id}/zones`);
 }

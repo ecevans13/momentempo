@@ -31,14 +31,17 @@ function SportBadge({ sportType }: { sportType: string }) {
   );
 }
 
-function ActivityCard({ activity }: { activity: ActivityItem }) {
+function ActivityCard({ activity, onClick }: { activity: ActivityItem; onClick: () => void }) {
   const isRun = ["Run", "TrailRun", "VirtualRun", "Treadmill"].includes(activity.sport_type);
   const paceDisplay = isRun && activity.distance > 0
     ? formatPace((activity.moving_time / activity.distance) * 1000)
     : null;
 
   return (
-    <div className="flex items-start gap-4 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 transition-shadow duration-200 hover:shadow-lg hover:shadow-orange-500/10 dark:hover:shadow-orange-500/20 hover:border-orange-300/30 dark:hover:border-orange-500/30">
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left flex items-start gap-4 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 transition-all duration-200 hover:shadow-lg hover:shadow-orange-500/10 dark:hover:shadow-orange-500/20 hover:border-orange-300/30 dark:hover:border-orange-500/30 cursor-pointer">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">{activity.name}</h3>
@@ -66,11 +69,16 @@ function ActivityCard({ activity }: { activity: ActivityItem }) {
           👍 {activity.kudos_count}
         </span>
       )}
-    </div>
+    </button>
   );
 }
 
-export default function ActivityFeed({ sportType }: { sportType?: string }) {
+interface ActivityFeedProps {
+  sportType?: string;
+  onSelectActivity?: (id: number) => void;
+}
+
+export default function ActivityFeed({ sportType, onSelectActivity }: ActivityFeedProps) {
   const { activities, loading, error, loadMore, hasMore, total } = useActivities(20, sportType);
 
   return (
@@ -86,7 +94,7 @@ export default function ActivityFeed({ sportType }: { sportType?: string }) {
 
       <div className="space-y-3">
         {activities.map((a) => (
-          <ActivityCard key={a.id} activity={a} />
+          <ActivityCard key={a.id} activity={a} onClick={() => onSelectActivity?.(a.id)} />
         ))}
       </div>
 
