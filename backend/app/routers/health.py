@@ -32,4 +32,5 @@ def health(request: Request):
         "status": "ok",
         "auth_status": auth_status,
         "version": "0.1.0",
+        "athlete_name": token.athlete_name if token else None,
     }

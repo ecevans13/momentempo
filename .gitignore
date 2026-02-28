@@ -7,6 +7,9 @@ backend/data/
 # Runtime logs
 backend/logs/
 
+# Runtime artifacts (created when running from backend/ dir)
+backend/backend/
+
 # Virtual environment
 .venv/
 
@@ -30,3 +33,7 @@ __pycache__/
 # Editor
 .idea/
 .vscode/
+
+# Frontend
+node_modules/
+frontend/dist/
