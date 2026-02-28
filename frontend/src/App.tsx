@@ -24,6 +24,7 @@ export default function App() {
   const [firstName, setFirstName] = useState<string | null>(null);
   const [sportType, setSportType] = useState("");
   const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
+  const [gearActivityId, setGearActivityId] = useState<number | null>(null);
   const [tab, setTab] = useState<Tab>("dashboard");
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export default function App() {
           {TABS.map((t) => (
             <button
               key={t.value}
-              onClick={() => { setTab(t.value); setSelectedActivityId(null); }}
+              onClick={() => { setTab(t.value); setSelectedActivityId(null); setGearActivityId(null); }}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 tab === t.value
                   ? "border-orange-500 text-orange-600 dark:text-orange-400"
@@ -81,8 +82,15 @@ export default function App() {
               <ActivityFeed sportType={sportOrUndefined} onSelectActivity={setSelectedActivityId} />
             </ErrorBoundary>
           </>
+        ) : tab === "gear" && gearActivityId !== null ? (
+          <ErrorBoundary>
+            <ActivityDetail
+              activityId={gearActivityId}
+              onBack={() => setGearActivityId(null)}
+            />
+          </ErrorBoundary>
         ) : tab === "gear" ? (
-          <ErrorBoundary><GearGallery /></ErrorBoundary>
+          <ErrorBoundary><GearGallery onSelectActivity={setGearActivityId} /></ErrorBoundary>
         ) : (
           <ErrorBoundary><TrophyCase /></ErrorBoundary>
         )}

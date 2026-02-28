@@ -1,0 +1,12 @@
+services:
+  stravviz:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:////data/stravviz.db
+    env_file:
+      - .env

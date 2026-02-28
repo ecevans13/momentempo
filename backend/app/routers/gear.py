@@ -65,6 +65,7 @@ async def list_gear(request: Request):
                     gear_list.append({
                         "id": data.get("id", gear_id),
                         "name": data.get("name", "Unknown"),
+                        "nickname": data.get("nickname", ""),
                         "brand_name": data.get("brand_name", ""),
                         "model_name": data.get("model_name", ""),
                         "distance": data.get("distance", local_distance),
@@ -77,3 +78,36 @@ async def list_gear(request: Request):
                     continue
 
         return {"gear": gear_list}
+
+
+@router.get("/{gear_id}/activities")
+async def gear_activities(gear_id: str, request: Request):
+    """Return all activities that used this gear, newest first."""
+    with _get_session(request) as session:
+        stmt = (
+            select(Activity)
+            .where(Activity.gear_id == gear_id)
+            .order_by(col(Activity.start_date_epoch).desc())
+        )
+        activities = session.exec(stmt).all()
+        return {
+            "activities": [
+                {
+                    "id": a.id,
+                    "name": a.name,
+                    "sport_type": a.sport_type,
+                    "start_date": a.start_date,
+                    "start_date_local": a.start_date_local,
+                    "distance": a.distance,
+                    "moving_time": a.moving_time,
+                    "total_elevation_gain": a.total_elevation_gain,
+                    "average_speed": a.average_speed,
+                    "has_heartrate": a.has_heartrate,
+                    "average_heartrate": a.average_heartrate,
+                    "suffer_score": a.suffer_score,
+                    "kudos_count": a.kudos_count,
+                }
+                for a in activities
+            ],
+            "total": len(activities),
+        }

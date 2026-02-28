@@ -1,0 +1,15 @@
+node_modules/
+__pycache__/
+*.pyc
+.git/
+.env
+*.db
+data/
+backend/data/
+backend/logs/
+frontend/dist/
+.venv/
+.pytest_cache/
+.planning/
+.claude/
+frontend/tsconfig.tsbuildinfo

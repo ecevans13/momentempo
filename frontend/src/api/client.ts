@@ -71,6 +71,10 @@ export function fetchGear(): Promise<{ gear: import("./types").GearItem[] }> {
   return fetchJSON("/api/gear");
 }
 
+export function fetchGearActivities(gearId: string): Promise<{ activities: import("./types").ActivityItem[]; total: number }> {
+  return fetchJSON(`/api/gear/${gearId}/activities`);
+}
+
 export function fetchPRs(): Promise<{ prs: import("./types").PRItem[] }> {
   return fetchJSON("/api/trophies/prs");
 }

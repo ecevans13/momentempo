@@ -124,6 +124,7 @@ export interface ZonesResponse {
 export interface GearItem {
   id: string;
   name: string;
+  nickname: string;
   brand_name: string;
   model_name: string;
   distance: number;

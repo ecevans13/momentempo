@@ -112,13 +112,19 @@ async def bootstrap_auth(engine, settings: Settings) -> None:
         token = session.exec(select(Token).where(Token.id == 1)).first()
 
         if token is None:
-            logger.info(
-                "No stored tokens found — opening browser for Strava authorization"
-            )
-            # Give the server a moment to finish binding to the port before the
-            # browser fires the callback request.
-            await asyncio.sleep(1.0)
-            webbrowser.open(build_auth_url(settings))
+            auth_url = build_auth_url(settings)
+            if settings.environment == "production":
+                logger.info(
+                    "No stored tokens — visit this URL to authorize: %s", auth_url
+                )
+            else:
+                logger.info(
+                    "No stored tokens found — opening browser for Strava authorization"
+                )
+                # Give the server a moment to finish binding to the port before
+                # the browser fires the callback request.
+                await asyncio.sleep(1.0)
+                webbrowser.open(auth_url)
         elif token_needs_refresh(token.expires_at):
             logger.info("Refreshing expired token")
             await ensure_valid_token(session, settings)

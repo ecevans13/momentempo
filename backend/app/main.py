@@ -1,10 +1,13 @@
 import logging
 import logging.handlers
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
 from .database import create_db_and_tables, get_engine
@@ -12,29 +15,41 @@ from .routers import activity_detail, auth, dashboard, gear, health, sync, troph
 
 logger = logging.getLogger(__name__)
 
+# Resolve paths relative to the project root (parent of backend/)
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_PROJECT_ROOT = _BACKEND_DIR.parent
+_FRONTEND_DIST = _PROJECT_ROOT / "frontend" / "dist"
+
 
 def configure_logging() -> None:
-    """Set up dual console + rotating file logging."""
-    logs_dir = Path("backend/logs")
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
+    """Set up console + optional rotating file logging."""
     log_format = "%(asctime)s %(levelname)s %(name)s: %(message)s"
     formatter = logging.Formatter(log_format)
 
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-
-    file_handler = logging.handlers.RotatingFileHandler(
-        logs_dir / "stravviz.log",
-        maxBytes=5 * 1024 * 1024,  # 5 MB
-        backupCount=3,
-    )
-    file_handler.setFormatter(formatter)
-
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
-    root_logger.addHandler(file_handler)
+
+    # Attempt file handler — gracefully skip if directory isn't writable
+    try:
+        settings = get_settings()
+        db_path = settings.database_url.replace("sqlite:///", "")
+        data_dir = Path(db_path).parent
+        logs_dir = data_dir / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+
+        file_handler = logging.handlers.RotatingFileHandler(
+            logs_dir / "stravviz.log",
+            maxBytes=5 * 1024 * 1024,  # 5 MB
+            backupCount=3,
+        )
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+    except Exception as exc:
+        root_logger.warning("File logging unavailable: %s", exc)
 
 
 @asynccontextmanager
@@ -42,9 +57,10 @@ async def lifespan(app: FastAPI):
     # Startup
     configure_logging()
 
-    # Ensure required directories exist
-    Path("backend/data").mkdir(parents=True, exist_ok=True)
-    Path("backend/logs").mkdir(parents=True, exist_ok=True)
+    # Ensure data directory exists based on database_url
+    settings = get_settings()
+    db_path = settings.database_url.replace("sqlite:///", "")
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
     # Create engine and store on app state
     engine = get_engine()
@@ -55,12 +71,11 @@ async def lifespan(app: FastAPI):
 
     logger.info("StravaViz backend started")
 
-    # Bootstrap authentication — opens browser on first run, refreshes silently on
-    # subsequent runs, stays completely silent when a valid token exists.
+    # Bootstrap authentication
     try:
         from .services.strava_auth import bootstrap_auth
 
-        await bootstrap_auth(engine, get_settings())
+        await bootstrap_auth(engine, settings)
     except Exception as exc:
         logger.error(
             "Auth bootstrap failed: %s — visit /auth/login to authenticate manually",
@@ -81,13 +96,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Only add CORS middleware in development (Vite dev server needs it)
+if os.getenv("ENVIRONMENT", "development") != "production":
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173", "http://localhost:3000"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Routers
 app.include_router(auth.router)
@@ -97,3 +114,18 @@ app.include_router(dashboard.router)
 app.include_router(activity_detail.router)
 app.include_router(gear.router)
 app.include_router(trophies.router)
+
+# --- Static file serving for production ---
+# Mount the assets directory if the frontend has been built
+if _FRONTEND_DIST.exists():
+    app.mount(
+        "/assets",
+        StaticFiles(directory=str(_FRONTEND_DIST / "assets")),
+        name="static-assets",
+    )
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(request: Request, full_path: str):
+        """SPA catch-all: serve index.html for any non-API path."""
+        # Let API routes handle themselves (they're registered above this catch-all)
+        return FileResponse(str(_FRONTEND_DIST / "index.html"))
