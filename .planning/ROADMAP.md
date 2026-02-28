@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Core Dashboard** - Backend API, frontend scaffold, key metrics, trends, and activity feed (completed 2026-02-27)
 - [x] **Phase 4: Activity Drill-Down** - Per-activity splits, HR charts, and zone breakdown (completed 2026-02-28)
 - [x] **Phase 5: Gear Gallery and Trophy Case** - Gear cards with auto-fetched images, PRs, milestones, and achievement timeline (completed 2026-02-28)
-- [ ] **Phase 6: Deployment** - Production deploy to cloud hosting
+- [x] **Phase 6: Deployment** - Docker deployment with multi-stage build, SPA serving, production config (completed 2026-02-28)
 
 ## Phase Details
 
@@ -105,4 +105,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Core Dashboard | Complete | Complete | 2026-02-27 |
 | 4. Activity Drill-Down | Complete | Complete | 2026-02-28 |
 | 5. Gear Gallery and Trophy Case | Complete | Complete | 2026-02-28 |
-| 6. Deployment | 0/TBD | Not started | - |
+| 6. Deployment | Complete | Complete | 2026-02-28 |

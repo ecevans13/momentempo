@@ -1,15 +1,12 @@
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { useTheme } from "./hooks/useTheme";
 import Header from "./components/Header";
 import Layout from "./components/Layout";
-import MetricCards from "./components/MetricCards";
-import TrendChart from "./components/TrendChart";
-import ActivityFeed from "./components/ActivityFeed";
-import ActivityDetail from "./components/ActivityDetail";
-import GearGallery from "./components/GearGallery";
-import TrophyCase from "./components/TrophyCase";
 import ErrorBoundary from "./components/ErrorBoundary";
-import SportFilter from "./components/SportFilter";
+
+const DashboardView = lazy(() => import("./views/DashboardView"));
+const GearView = lazy(() => import("./views/GearView"));
+const TrophyView = lazy(() => import("./views/TrophyView"));
 
 type Tab = "dashboard" | "gear" | "trophies";
 
@@ -19,12 +16,17 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "trophies", label: "Trophies" },
 ];
 
+function TabSpinner() {
+  return (
+    <div className="py-16 text-center">
+      <div className="inline-block w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
 export default function App() {
   const { theme, toggleTheme } = useTheme();
   const [firstName, setFirstName] = useState<string | null>(null);
-  const [sportType, setSportType] = useState("");
-  const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
-  const [gearActivityId, setGearActivityId] = useState<number | null>(null);
   const [tab, setTab] = useState<Tab>("dashboard");
 
   useEffect(() => {
@@ -38,8 +40,6 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  const sportOrUndefined = sportType || undefined;
-
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100">
       <Header theme={theme} toggleTheme={toggleTheme} firstName={firstName} />
@@ -50,7 +50,7 @@ export default function App() {
           {TABS.map((t) => (
             <button
               key={t.value}
-              onClick={() => { setTab(t.value); setSelectedActivityId(null); setGearActivityId(null); }}
+              onClick={() => setTab(t.value)}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 tab === t.value
                   ? "border-orange-500 text-orange-600 dark:text-orange-400"
@@ -64,36 +64,13 @@ export default function App() {
       </div>
 
       <Layout>
-        {tab === "dashboard" && selectedActivityId !== null ? (
-          <ErrorBoundary>
-            <ActivityDetail
-              activityId={selectedActivityId}
-              onBack={() => setSelectedActivityId(null)}
-            />
-          </ErrorBoundary>
-        ) : tab === "dashboard" ? (
-          <>
-            <div className="flex items-center justify-end mb-2">
-              <SportFilter value={sportType} onChange={setSportType} />
-            </div>
-            <ErrorBoundary><MetricCards /></ErrorBoundary>
-            <ErrorBoundary><TrendChart sportType={sportOrUndefined} /></ErrorBoundary>
-            <ErrorBoundary>
-              <ActivityFeed sportType={sportOrUndefined} onSelectActivity={setSelectedActivityId} />
-            </ErrorBoundary>
-          </>
-        ) : tab === "gear" && gearActivityId !== null ? (
-          <ErrorBoundary>
-            <ActivityDetail
-              activityId={gearActivityId}
-              onBack={() => setGearActivityId(null)}
-            />
-          </ErrorBoundary>
-        ) : tab === "gear" ? (
-          <ErrorBoundary><GearGallery onSelectActivity={setGearActivityId} /></ErrorBoundary>
-        ) : (
-          <ErrorBoundary><TrophyCase /></ErrorBoundary>
-        )}
+        <ErrorBoundary>
+          <Suspense fallback={<TabSpinner />}>
+            {tab === "dashboard" && <DashboardView />}
+            {tab === "gear" && <GearView />}
+            {tab === "trophies" && <TrophyView />}
+          </Suspense>
+        </ErrorBoundary>
       </Layout>
     </div>
   );
