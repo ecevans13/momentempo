@@ -13,8 +13,8 @@ StravaViz is built in strict dependency order: auth unblocks data, data unblocks
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation and Auth** - Project scaffold, Strava OAuth, and token management (completed 2026-02-27)
-- [ ] **Phase 2: Data Pipeline** - Full-history backfill, incremental sync, and rate-limit enforcement
-- [ ] **Phase 3: Core Dashboard** - Backend API, frontend scaffold, key metrics, trends, and activity feed
+- [x] **Phase 2: Data Pipeline** - Full-history backfill, incremental sync, and rate-limit enforcement (completed 2026-02-27)
+- [x] **Phase 3: Core Dashboard** - Backend API, frontend scaffold, key metrics, trends, and activity feed (completed 2026-02-27)
 - [ ] **Phase 4: Activity Drill-Down** - Per-activity splits, HR charts, and zone breakdown
 - [ ] **Phase 5: Gear Gallery and Trophy Case** - Gear cards with auto-fetched images, PRs, milestones, and achievement timeline
 - [ ] **Phase 6: Deployment** - Production deploy to cloud hosting
@@ -101,8 +101,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation and Auth | 2/2 | Complete   | 2026-02-27 |
-| 2. Data Pipeline | 0/TBD | Not started | - |
-| 3. Core Dashboard | 0/TBD | Not started | - |
+| 2. Data Pipeline | Complete | Complete | 2026-02-27 |
+| 3. Core Dashboard | Complete | Complete | 2026-02-27 |
 | 4. Activity Drill-Down | 0/TBD | Not started | - |
 | 5. Gear Gallery and Trophy Case | 0/TBD | Not started | - |
 | 6. Deployment | 0/TBD | Not started | - |

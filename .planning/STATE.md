@@ -5,35 +5,29 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** See the story your training data tells — trends, progress, and projections — in one beautiful, personal dashboard.
-**Current focus:** Phase 1 — Foundation and Auth
+**Current focus:** Phase 3 — Core Dashboard (finalizing)
 
 ## Current Position
 
-Phase: 1 of 6 (Foundation and Auth)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-27 — Plan 01-02 complete: Strava OAuth flow, token refresh, health endpoint, 16-test suite
+Phase: 3 of 6 (Core Dashboard)
+Status: Near complete — backend API, frontend scaffold, and fixes all committed
+Last activity: 2026-02-27 — Phase 3 frontend fixes: timeframe selector, sport filter, error boundaries
 
-Progress: [██░░░░░░░░] 10%
+Progress: [██████░░░░] 55%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 2.5 min
-- Total execution time: 5 min
+- Total plans completed: 2 (formal), Phase 2 + Phase 3 executed without formal plans
+- Total execution time: ~15 min
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01-foundation-and-auth | 2 | 5 min | 2.5 min |
-
-**Recent Trend:**
-- Last 5 plans: 01-01 (3 min), 01-02 (2 min)
-- Trend: —
-
-*Updated after each plan completion*
+| Phase | Status | Notes |
+|-------|--------|-------|
+| 01-foundation-and-auth | Complete | OAuth flow, token refresh, health endpoint, 16 tests |
+| 02-data-pipeline | Complete | Activity/SyncState models, Strava client, sync orchestrator, 53 tests |
+| 03-core-dashboard | Near complete | Dashboard API, React frontend, dark mode, trends, activity feed |
 
 ## Accumulated Context
 
@@ -52,10 +46,17 @@ Recent decisions affecting current work:
 - [01-02]: get_db_session uses request.app.state.engine directly (not get_session) for TestClient compatibility
 - [01-02]: bootstrap_auth sleeps 1s before webbrowser.open() to let uvicorn finish port binding
 - [01-02]: ensure_valid_token catches Exception (not just httpx.HTTPError) for full network error resilience
+- [02]: Page-based pagination with per_page=200 for backfill; empty-page termination (not short-page)
+- [02]: session.merge() for upsert — Strava activity ID as natural primary key
+- [02]: Incremental sync uses after=max_epoch-86400 (1-day overlap buffer) to catch edge cases
+- [03]: TrendChart has own timeframe selector (3M/6M/1Y/2Y/All) independent of MetricCards period
+- [03]: Sport type filter affects trends + activity feed (summary endpoint doesn't filter by sport)
+- [03]: ErrorBoundary wraps each section independently for fault isolation
+- [03]: .env path resolved to absolute project root for working directory independence
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
@@ -66,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 01-02-PLAN.md — Strava OAuth flow, token refresh, health endpoint, 16-test suite
-Resume file: .planning/phases/01-foundation-and-auth/01-03-PLAN.md (next plan)
+Stopped at: Phase 3 frontend fixes committed — next is Phase 4 (Activity Drill-Down)
+Resume: Phase 4 research and planning needed
