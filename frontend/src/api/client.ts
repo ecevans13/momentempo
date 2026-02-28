@@ -66,3 +66,33 @@ export function fetchActivityDetail(id: number): Promise<ActivityDetailResponse>
 export function fetchActivityZones(id: number): Promise<ZonesResponse> {
   return fetchJSON(`/api/activity/${id}/zones`);
 }
+
+export function fetchGear(): Promise<{ gear: import("./types").GearItem[] }> {
+  return fetchJSON("/api/gear");
+}
+
+export function fetchPRs(): Promise<{ prs: import("./types").PRItem[] }> {
+  return fetchJSON("/api/trophies/prs");
+}
+
+export function fetchMilestones(): Promise<{ milestones: import("./types").MilestoneItem[] }> {
+  return fetchJSON("/api/trophies/milestones");
+}
+
+export function createMilestone(data: { title: string; description?: string; achieved_at?: string | null }): Promise<import("./types").MilestoneItem> {
+  return fetchJSON("/api/trophies/milestones", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteMilestone(id: number): Promise<void> {
+  return fetch(`/api/trophies/milestones/${id}`, { method: "DELETE" }).then((r) => {
+    if (!r.ok) throw new Error(`Delete failed: ${r.status}`);
+  });
+}
+
+export function fetchTimeline(): Promise<{ events: import("./types").TimelineEvent[] }> {
+  return fetchJSON("/api/trophies/timeline");
+}

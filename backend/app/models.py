@@ -1,3 +1,5 @@
+import time
+
 from sqlmodel import Field, SQLModel
 
 
@@ -94,3 +96,12 @@ class SyncState(SQLModel, table=True):
     is_initial_backfill_done: bool = False
     activities_synced: int = 0  # Total activities in DB after last sync
     last_sync_activities_fetched: int = 0  # Activities fetched in last sync run
+
+
+class Milestone(SQLModel, table=True):
+    """User-defined custom milestone for the trophy case."""
+    id: int | None = Field(default=None, primary_key=True)
+    title: str  # e.g. "First 50-mile week"
+    description: str = ""
+    achieved_at: str | None = None  # ISO date string when achieved, null if not yet
+    created_at: float = Field(default_factory=time.time)

@@ -121,6 +121,45 @@ export interface ZonesResponse {
   zones: HRZone[];
 }
 
+export interface GearItem {
+  id: string;
+  name: string;
+  brand_name: string;
+  model_name: string;
+  distance: number;
+  activity_count: number;
+  retired: boolean;
+}
+
+export interface PRItem {
+  distance_name: string;
+  distance_target_m: number;
+  activity_id: number | null;
+  activity_name: string | null;
+  moving_time: number | null;
+  distance: number | null;
+  start_date: string | null;
+  average_heartrate: number | null;
+}
+
+export interface MilestoneItem {
+  id: number;
+  title: string;
+  description: string;
+  achieved_at: string | null;
+  created_at: number;
+}
+
+export interface TimelineEvent {
+  type: "pr" | "milestone";
+  title: string;
+  subtitle: string;
+  date: string;
+  moving_time?: number;
+  activity_id?: number;
+  milestone_id?: number;
+}
+
 export type Period = "week" | "month" | "year" | "all";
 export type Metric = "distance" | "duration" | "pace" | "elevation" | "count";
 export type Granularity = "weekly" | "monthly";
