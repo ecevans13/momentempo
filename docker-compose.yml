@@ -8,5 +8,6 @@ services:
     environment:
       - ENVIRONMENT=production
       - DATABASE_URL=sqlite:////data/stravviz.db
+      - SSL_VERIFY=false
     env_file:
       - .env

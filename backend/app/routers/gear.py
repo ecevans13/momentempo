@@ -42,7 +42,7 @@ async def list_gear(request: Request):
 
         # Fetch each gear's details from Strava + compute distance from local data
         gear_list = []
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=get_settings().ssl_verify) as client:
             for gear_id in gear_ids:
                 try:
                     response, _ = await strava_get(

@@ -37,7 +37,7 @@ def token_needs_refresh(expires_at: int) -> bool:
 
 async def exchange_code_for_tokens(code: str, settings: Settings) -> dict:
     """Exchange an OAuth authorization code for access and refresh tokens."""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(verify=settings.ssl_verify) as client:
         response = await client.post(
             STRAVA_TOKEN_URL,
             data={
@@ -57,7 +57,7 @@ async def refresh_access_token(refresh_token: str, settings: Settings) -> dict:
     CRITICAL: The response contains a NEW refresh_token that MUST be persisted.
     The old refresh_token becomes invalid after approximately 1 hour.
     """
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(verify=settings.ssl_verify) as client:
         response = await client.post(
             STRAVA_TOKEN_URL,
             data={

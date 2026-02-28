@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     strava_client_secret: str
     strava_redirect_uri: str = "http://localhost:8000/auth/callback"
     database_url: str = "sqlite:///backend/data/stravviz.db"
+    ssl_verify: bool = True
 
     model_config = SettingsConfigDict(
         env_file=str(_PROJECT_ROOT / ".env"),

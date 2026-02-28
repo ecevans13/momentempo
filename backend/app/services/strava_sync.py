@@ -69,7 +69,7 @@ async def run_sync(session: Session, settings: Settings) -> dict:
 
     # 4. Fetch from Strava
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, verify=settings.ssl_verify) as client:
             rate_limit = RateLimitState()
             activities_data, rate_limit = await fetch_all_activities(
                 client, token.access_token, after=after, rate_limit=rate_limit

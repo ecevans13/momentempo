@@ -37,7 +37,7 @@ async def get_activity_detail(request: Request, activity_id: int):
     with _get_session(request) as session:
         token = await _get_valid_token(session)
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=get_settings().ssl_verify) as client:
             response, _ = await strava_get(
                 client,
                 f"/activities/{activity_id}",
@@ -129,7 +129,7 @@ async def get_activity_zones(request: Request, activity_id: int):
     with _get_session(request) as session:
         token = await _get_valid_token(session)
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=get_settings().ssl_verify) as client:
             response, _ = await strava_get(
                 client,
                 f"/activities/{activity_id}/zones",
