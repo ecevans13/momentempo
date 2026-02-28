@@ -35,7 +35,8 @@ export default function HRZoneChart({ zones, totalTime }: HRZoneChartProps) {
 
   return (
     <div className="space-y-3">
-      {zones.map((zone, i) => {
+      {[...zones].reverse().map((zone, _ri, arr) => {
+        const i = arr.length - 1 - _ri;
         const pct = totalTime > 0 ? (zone.time_seconds / totalTime) * 100 : 0;
         const barWidth = maxTime > 0 ? (zone.time_seconds / maxTime) * 100 : 0;
         const color = ZONE_COLORS[i] ?? "bg-gray-400";
