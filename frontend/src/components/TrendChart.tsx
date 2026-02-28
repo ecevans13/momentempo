@@ -54,10 +54,19 @@ function getYAxisLabel(metric: Metric): string {
   }
 }
 
-export default function TrendChart() {
+const TIMEFRAMES: { value: number; label: string }[] = [
+  { value: 3, label: "3M" },
+  { value: 6, label: "6M" },
+  { value: 12, label: "1Y" },
+  { value: 24, label: "2Y" },
+  { value: 60, label: "All" },
+];
+
+export default function TrendChart({ sportType }: { sportType?: string }) {
   const [metric, setMetric] = useState<Metric>("distance");
   const [granularity, setGranularity] = useState<Granularity>("weekly");
-  const { data, loading, error } = useTrends(metric, granularity);
+  const [months, setMonths] = useState(12);
+  const { data, loading, error } = useTrends(metric, granularity, months, sportType);
 
   return (
     <section>
@@ -85,6 +94,21 @@ export default function TrendChart() {
                 }`}
               >
                 {g.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            {TIMEFRAMES.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => setMonths(t.value)}
+                className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                  months === t.value
+                    ? "bg-orange-600 text-white"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                {t.label}
               </button>
             ))}
           </div>

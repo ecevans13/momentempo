@@ -31,7 +31,7 @@ export function useSummary(period: Period) {
   return { data, loading, error };
 }
 
-export function useTrends(metric: Metric, granularity: Granularity, months: number = 12) {
+export function useTrends(metric: Metric, granularity: Granularity, months: number = 12, sportType?: string) {
   const [data, setData] = useState<TrendsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,16 +39,16 @@ export function useTrends(metric: Metric, granularity: Granularity, months: numb
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetchTrends(metric, granularity, months)
+    fetchTrends(metric, granularity, months, sportType)
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [metric, granularity, months]);
+  }, [metric, granularity, months, sportType]);
 
   return { data, loading, error };
 }
 
-export function useActivities(perPage: number = 20) {
+export function useActivities(perPage: number = 20, sportType?: string) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<Pick<ActivitiesResponse, "total" | "total_pages"> | null>(null);
@@ -58,7 +58,7 @@ export function useActivities(perPage: number = 20) {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetchActivities(1, perPage)
+    fetchActivities(1, perPage, sportType)
       .then((res) => {
         setActivities(res.activities);
         setMeta({ total: res.total, total_pages: res.total_pages });
@@ -66,12 +66,12 @@ export function useActivities(perPage: number = 20) {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [perPage]);
+  }, [perPage, sportType]);
 
   const loadMore = useCallback(() => {
     const nextPage = page + 1;
     setLoading(true);
-    fetchActivities(nextPage, perPage)
+    fetchActivities(nextPage, perPage, sportType)
       .then((res) => {
         setActivities((prev) => [...prev, ...res.activities]);
         setMeta({ total: res.total, total_pages: res.total_pages });
@@ -79,7 +79,7 @@ export function useActivities(perPage: number = 20) {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [page, perPage]);
+  }, [page, perPage, sportType]);
 
   const hasMore = meta ? page < meta.total_pages : false;
 

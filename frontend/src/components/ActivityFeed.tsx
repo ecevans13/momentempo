@@ -70,8 +70,8 @@ function ActivityCard({ activity }: { activity: ActivityItem }) {
   );
 }
 
-export default function ActivityFeed() {
-  const { activities, loading, error, loadMore, hasMore, total } = useActivities();
+export default function ActivityFeed({ sportType }: { sportType?: string }) {
+  const { activities, loading, error, loadMore, hasMore, total } = useActivities(20, sportType);
 
   return (
     <section>
