@@ -64,7 +64,7 @@ export default function GearGallery({ onSelectActivity }: GearGalleryProps) {
             key={g.id}
             type="button"
             onClick={() => setSelectedGearId(g.id)}
-            className="w-full text-left rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 transition-all duration-200 hover:shadow-lg hover:shadow-orange-500/10 dark:hover:shadow-orange-500/20 hover:border-orange-300/30 dark:hover:border-orange-500/30 cursor-pointer"
+            className="w-full text-left rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10 dark:hover:shadow-indigo-500/20 hover:border-indigo-300/30 dark:hover:border-indigo-500/30 cursor-pointer"
           >
             <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-2xl mb-3">
               {"\u{1F45F}"}
@@ -166,7 +166,7 @@ function GearDetail({
 
         {loading ? (
           <div className="py-8 text-center">
-            <div className="inline-block w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <div className="inline-block w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-gray-500 mt-3">Loading activities...</p>
           </div>
         ) : activities.length === 0 ? (
@@ -185,7 +185,7 @@ function GearDetail({
                   key={a.id}
                   type="button"
                   onClick={() => onSelectActivity?.(a.id)}
-                  className="w-full text-left flex items-start gap-4 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 transition-all duration-200 hover:shadow-lg hover:shadow-orange-500/10 dark:hover:shadow-orange-500/20 hover:border-orange-300/30 dark:hover:border-orange-500/30 cursor-pointer"
+                  className="w-full text-left flex items-start gap-4 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10 dark:hover:shadow-indigo-500/20 hover:border-indigo-300/30 dark:hover:border-indigo-500/30 cursor-pointer"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

@@ -89,7 +89,7 @@ export default function TrendChart({ sportType }: { sportType?: string }) {
                 onClick={() => setGranularity(g.value)}
                 className={`px-3 py-1 text-sm rounded-md transition-colors ${
                   granularity === g.value
-                    ? "bg-orange-600 text-white"
+                    ? "bg-indigo-600 text-white"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
@@ -104,7 +104,7 @@ export default function TrendChart({ sportType }: { sportType?: string }) {
                 onClick={() => setMonths(t.value)}
                 className={`px-2 py-1 text-xs rounded-md transition-colors ${
                   months === t.value
-                    ? "bg-orange-600 text-white"
+                    ? "bg-indigo-600 text-white"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
@@ -127,8 +127,8 @@ export default function TrendChart({ sportType }: { sportType?: string }) {
             <AreaChart data={data.data}>
               <defs>
                 <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ea580c" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#ea580c" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -163,7 +163,7 @@ export default function TrendChart({ sportType }: { sportType?: string }) {
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#ea580c"
+                stroke="#6366f1"
                 strokeWidth={2}
                 fill="url(#chartGradient)"
               />

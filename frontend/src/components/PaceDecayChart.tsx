@@ -51,7 +51,7 @@ export default function PaceDecayChart({ splits }: PaceDecayChartProps) {
           formatter={(value: number) => [formatPace(value), "Pace"]}
           labelFormatter={(label: number) => `Split ${label}`}
           contentStyle={{ backgroundColor: "#1f2937", border: "none", borderRadius: 8, fontSize: 13 }}
-          itemStyle={{ color: "#f97316" }}
+          itemStyle={{ color: "#6366f1" }}
           labelStyle={{ color: "#9ca3af" }}
         />
         <ReferenceLine
@@ -63,9 +63,9 @@ export default function PaceDecayChart({ splits }: PaceDecayChartProps) {
         <Line
           type="monotone"
           dataKey="pace"
-          stroke="#f97316"
+          stroke="#6366f1"
           strokeWidth={2}
-          dot={{ r: 3, fill: "#f97316" }}
+          dot={{ r: 3, fill: "#6366f1" }}
           activeDot={{ r: 5 }}
         />
       </LineChart>

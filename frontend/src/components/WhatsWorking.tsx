@@ -6,7 +6,7 @@ export default function WhatsWorking() {
   if (loading) {
     return (
       <div className="py-8 text-center">
-        <div className="inline-block w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        <div className="inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

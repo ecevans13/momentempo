@@ -10,18 +10,18 @@ const CELL_GAP = 3;
 
 const COLORS = [
   "rgb(229, 231, 235)", // gray-200 (no activity)
-  "rgb(255, 237, 213)", // orange-100
-  "rgb(253, 186, 116)", // orange-300
-  "rgb(249, 115, 22)",  // orange-500
-  "rgb(194, 65, 12)",   // orange-700
+  "rgb(204, 251, 241)", // teal-100
+  "rgb(94, 234, 212)",  // teal-300
+  "rgb(20, 184, 166)",  // teal-500
+  "rgb(15, 118, 110)",  // teal-700
 ];
 
 const COLORS_DARK = [
   "rgb(55, 65, 81)",    // gray-700
-  "rgb(124, 45, 18)",   // orange-900
-  "rgb(194, 65, 12)",   // orange-700
-  "rgb(234, 88, 12)",   // orange-600
-  "rgb(249, 115, 22)",  // orange-500
+  "rgb(19, 78, 74)",    // teal-900
+  "rgb(15, 118, 110)",  // teal-700
+  "rgb(13, 148, 136)",  // teal-600
+  "rgb(20, 184, 166)",  // teal-500
 ];
 
 const SPORT_ICONS: Record<string, string> = {
@@ -97,7 +97,7 @@ function DayDrilldown({
 
       {loading ? (
         <div className="py-4 text-center">
-          <div className="inline-block w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <div className="inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : activities.length === 0 ? (
         <p className="text-sm text-gray-500">Rest day — no activities recorded.</p>
@@ -162,7 +162,7 @@ export default function TrainingHeatmap({ onSelectActivity }: { onSelectActivity
   if (loading) {
     return (
       <div className="py-8 text-center">
-        <div className="inline-block w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        <div className="inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -248,7 +248,7 @@ export default function TrainingHeatmap({ onSelectActivity }: { onSelectActivity
                 height={CELL_SIZE}
                 rx={2}
                 fill={getColor(cell.load, maxLoad, isDark)}
-                stroke={cell.date === selectedDate ? "#f97316" : "none"}
+                stroke={cell.date === selectedDate ? "#14b8a6" : "none"}
                 strokeWidth={cell.date === selectedDate ? 2 : 0}
                 className="cursor-pointer"
                 onMouseEnter={(e) => {

@@ -21,7 +21,7 @@ const TABS: { value: Tab; label: string }[] = [
 function TabSpinner() {
   return (
     <div className="py-16 text-center">
-      <div className="inline-block w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      <div className="inline-block w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
@@ -55,7 +55,7 @@ export default function App() {
               onClick={() => setTab(t.value)}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 tab === t.value
-                  ? "border-orange-500 text-orange-600 dark:text-orange-400"
+                  ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
                   : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >

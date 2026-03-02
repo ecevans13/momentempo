@@ -15,7 +15,7 @@ function PRCard({ pr }: { pr: PRItem }) {
   return (
     <div className="rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4">
       <p className="text-sm font-medium text-gray-900 dark:text-white">{pr.distance_name}</p>
-      <p className="text-xl font-bold text-orange-500 mt-1">{formatDuration(pr.moving_time!)}</p>
+      <p className="text-xl font-bold text-emerald-400 mt-1">{formatDuration(pr.moving_time!)}</p>
       <p className="text-xs text-gray-500 mt-1 truncate">{pr.activity_name}</p>
       {pr.start_date && <p className="text-xs text-gray-400">{formatRelativeDate(pr.start_date)}</p>}
     </div>
@@ -59,7 +59,7 @@ function MilestoneForm({ onCreated }: { onCreated: () => void }) {
       <button
         type="submit"
         disabled={submitting || !title.trim()}
-        className="px-3 py-1.5 text-sm rounded-md bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white transition-colors"
+        className="px-3 py-1.5 text-sm rounded-md bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white transition-colors"
       >
         Add
       </button>
@@ -128,7 +128,7 @@ export default function TrophyCase() {
           <div className="space-y-3">
             {timeline.map((e, i) => (
               <div key={i} className="flex gap-3 items-start">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${e.type === "pr" ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600" : "bg-blue-100 dark:bg-blue-900/30 text-blue-600"}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${e.type === "pr" ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" : "bg-blue-100 dark:bg-blue-900/30 text-blue-600"}`}>
                   {e.type === "pr" ? "🏆" : "⭐"}
                 </div>
                 <div>

@@ -77,9 +77,9 @@ export default function HRDriftChart({ splits }: HRDriftChartProps) {
             yAxisId="pace"
             type="monotone"
             dataKey="pace"
-            stroke="#f97316"
+            stroke="#6366f1"
             strokeWidth={2}
-            dot={{ r: 3, fill: "#f97316" }}
+            dot={{ r: 3, fill: "#6366f1" }}
             name="pace"
           />
           <Line

@@ -1,12 +1,13 @@
 import type { HRZone } from "../api/types";
 import { formatDuration } from "../utils/format";
 
+// Yellow-to-red gradient: Zone 1 (easy) → Zone 5 (max effort)
 const ZONE_COLORS = [
-  "bg-gray-400",      // Zone 1 — Recovery
-  "bg-blue-500",      // Zone 2 — Aerobic
-  "bg-green-500",     // Zone 3 — Tempo
-  "bg-yellow-500",    // Zone 4 — Threshold
-  "bg-red-500",       // Zone 5 — VO2 Max
+  "bg-amber-300",     // Zone 1 — Recovery
+  "bg-amber-400",     // Zone 2 — Aerobic
+  "bg-orange-500",    // Zone 3 — Tempo
+  "bg-red-500",       // Zone 4 — Threshold
+  "bg-red-700",       // Zone 5 — VO2 Max
 ];
 
 const ZONE_DESCRIPTIONS = [

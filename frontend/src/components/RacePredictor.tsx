@@ -19,7 +19,7 @@ export default function RacePredictor() {
   if (loading) {
     return (
       <div className="py-8 text-center">
-        <div className="inline-block w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        <div className="inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -44,7 +44,7 @@ export default function RacePredictor() {
       {/* VDOT badge */}
       {data.vdot_estimate && (
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
             VDOT {data.vdot_estimate}
           </span>
           <span className="text-xs text-gray-500" title="Estimated VO2max-equivalent based on your best efforts">

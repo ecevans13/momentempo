@@ -76,7 +76,7 @@ export default function SplitsTable({ splitsKm, splitsMi }: SplitsTableProps) {
                 <td className="py-2">
                   <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-orange-500"
+                      className="h-full rounded-full bg-indigo-500"
                       style={{ width: paceBarWidth(pace) }}
                     />
                   </div>

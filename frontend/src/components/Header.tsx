@@ -41,7 +41,7 @@ export default function Header({ theme, toggleTheme, firstName }: HeaderProps) {
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="px-3 py-1.5 text-sm rounded-md bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white transition-colors"
+          className="px-3 py-1.5 text-sm rounded-md bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white transition-colors"
         >
           {syncing ? "Syncing..." : "Sync"}
         </button>

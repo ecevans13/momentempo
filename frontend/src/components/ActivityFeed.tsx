@@ -41,7 +41,7 @@ function ActivityCard({ activity, onClick }: { activity: ActivityItem; onClick: 
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left flex items-start gap-4 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 transition-all duration-200 hover:shadow-lg hover:shadow-orange-500/10 dark:hover:shadow-orange-500/20 hover:border-orange-300/30 dark:hover:border-orange-500/30 cursor-pointer">
+      className="w-full text-left flex items-start gap-4 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10 dark:hover:shadow-indigo-500/20 hover:border-indigo-300/30 dark:hover:border-indigo-500/30 cursor-pointer">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">{activity.name}</h3>

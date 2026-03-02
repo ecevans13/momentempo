@@ -46,7 +46,7 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
   if (loading) {
     return (
       <div className="py-12 text-center">
-        <div className="inline-block w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        <div className="inline-block w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
         <p className="text-sm text-gray-500 mt-3">Loading activity details...</p>
       </div>
     );
@@ -58,7 +58,7 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
         <p className="text-red-400 text-sm mb-3">{error}</p>
         <button
           onClick={onBack}
-          className="text-sm text-orange-500 hover:text-orange-400"
+          className="text-sm text-indigo-500 hover:text-indigo-400"
         >
           Back to dashboard
         </button>
