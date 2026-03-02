@@ -7,9 +7,9 @@ from fastapi import APIRouter, BackgroundTasks, Request
 from sqlmodel import Session, func, select
 
 from ..config import get_settings
-from ..models import Activity, SyncState
+from ..models import Activity, BestEffort, SyncState
 from ..services.strava_auth import ensure_valid_token
-from ..services.strava_sync import TTL_SECONDS, get_sync_state, run_sync
+from ..services.strava_sync import TTL_SECONDS, get_sync_state, run_sync, sync_best_efforts
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +56,55 @@ async def trigger_sync(request: Request, background_tasks: BackgroundTasks):
     background_tasks.add_task(_run_sync_background)
 
     return {"status": "accepted", "message": "Sync started in background"}
+
+
+@router.post("/sync/best-efforts", status_code=202)
+async def trigger_best_efforts_sync(request: Request, background_tasks: BackgroundTasks):
+    """Sync best efforts from Strava activity details.
+
+    Processes running activities in batches (80 per call) to stay within rate limits.
+    Re-call until response shows remaining=0.
+    """
+    engine = request.app.state.engine
+    settings = get_settings()
+
+    with Session(engine) as session:
+        token = await ensure_valid_token(session, settings)
+        if token is None:
+            return {"status": "skipped", "reason": "no_token"}
+
+    async def _run_best_efforts_background():
+        with Session(engine) as bg_session:
+            result = await sync_best_efforts(bg_session, settings)
+            logger.info("Best efforts sync result: %s", result)
+
+    background_tasks.add_task(_run_best_efforts_background)
+    return {"status": "accepted", "message": "Best efforts sync started in background"}
+
+
+@router.get("/sync/best-efforts/status")
+def best_efforts_sync_status(request: Request):
+    """Return how many running activities still need best efforts synced."""
+    engine = request.app.state.engine
+    RUN_SPORT_TYPES = {"Run", "TrailRun", "VirtualRun", "Treadmill"}
+
+    with Session(engine) as session:
+        total_runs = session.exec(
+            select(func.count(Activity.id)).where(
+                Activity.sport_type.in_(RUN_SPORT_TYPES),  # type: ignore[attr-defined]
+                Activity.distance > 0,
+            )
+        ).one()
+
+        synced = session.exec(
+            select(func.count(func.distinct(BestEffort.activity_id)))
+        ).one()
+
+    return {
+        "total_running_activities": total_runs,
+        "activities_with_best_efforts": synced,
+        "remaining": max(0, total_runs - synced),
+    }
 
 
 @router.get("/sync/status")

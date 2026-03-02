@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from backend.app.models import Activity, Milestone
+from backend.app.models import Activity, BestEffort, Milestone
 
 
 def _make_activity(session, **kwargs):
@@ -84,6 +84,92 @@ def test_milestones_crud(client: TestClient):
 def test_delete_milestone_not_found(client: TestClient):
     resp = client.delete("/api/trophies/milestones/999")
     assert resp.status_code == 404
+
+
+def test_prs_from_best_efforts(client: TestClient, session: Session):
+    """PRs should come from BestEffort table when available, even if
+    the parent activity's total distance doesn't match the PR distance."""
+    # Activity is a 5K race — total distance ~5077m
+    _make_activity(session, id=100, distance=5077, moving_time=1499,
+                   name="Run for Love 2025",
+                   start_date="2025-05-31T13:00:02Z")
+
+    # But the best 1-mile segment within that race was 446s (7:26)
+    be = BestEffort(
+        activity_id=100,
+        activity_name="Run for Love 2025",
+        name="1 mile",
+        distance=1609.0,
+        moving_time=446,
+        elapsed_time=450,
+        start_date="2025-05-31T13:02:00Z",
+        pr_rank=1,
+    )
+    session.add(be)
+    session.commit()
+
+    response = client.get("/api/trophies/prs")
+    data = response.json()
+
+    mile_pr = next(pr for pr in data["prs"] if pr["distance_name"] == "1 Mile")
+    assert mile_pr["activity_id"] == 100
+    assert mile_pr["moving_time"] == 446
+    assert mile_pr["activity_name"] == "Run for Love 2025"
+    assert data["source"] == "best_efforts"
+
+
+def test_prs_best_effort_picks_fastest(client: TestClient, session: Session):
+    """When multiple best efforts exist, the fastest is returned."""
+    _make_activity(session, id=1, distance=5000, moving_time=1500, name="Run A")
+    _make_activity(session, id=2, distance=8000, moving_time=2500, name="Run B")
+
+    # Two 1-mile best efforts — the second is faster
+    session.add(BestEffort(activity_id=1, activity_name="Run A",
+                           name="1 mile", distance=1609, moving_time=500,
+                           start_date="2026-01-10T08:00:00Z"))
+    session.add(BestEffort(activity_id=2, activity_name="Run B",
+                           name="1 mile", distance=1609, moving_time=440,
+                           start_date="2026-01-15T08:00:00Z"))
+    session.commit()
+
+    response = client.get("/api/trophies/prs")
+    data = response.json()
+    mile_pr = next(pr for pr in data["prs"] if pr["distance_name"] == "1 Mile")
+    assert mile_pr["moving_time"] == 440
+    assert mile_pr["activity_name"] == "Run B"
+
+
+def test_prs_fallback_without_best_efforts(client: TestClient, session: Session):
+    """Without BestEffort data, PRs fall back to total activity distance matching."""
+    _make_activity(session, id=1, distance=1650, moving_time=480,
+                   sport_type="Run", name="Mile TT")
+
+    response = client.get("/api/trophies/prs")
+    data = response.json()
+    mile_pr = next(pr for pr in data["prs"] if pr["distance_name"] == "1 Mile")
+    assert mile_pr["activity_id"] == 1
+    assert mile_pr["moving_time"] == 480
+    assert data["source"] == "activity_distance"
+
+
+def test_timeline_with_best_efforts(client: TestClient, session: Session):
+    """Timeline should use BestEffort data when available."""
+    _make_activity(session, id=100, distance=5077, moving_time=1499,
+                   name="Fast 5K Race",
+                   start_date="2026-02-10T08:00:00Z")
+
+    session.add(BestEffort(activity_id=100, activity_name="Fast 5K Race",
+                           name="5k", distance=5000, moving_time=1200,
+                           start_date="2026-02-10T08:00:00Z"))
+    session.commit()
+
+    resp = client.get("/api/trophies/timeline")
+    events = resp.json()["events"]
+    pr_events = [e for e in events if e["type"] == "pr"]
+    assert len(pr_events) >= 1
+    five_k_pr = next(e for e in pr_events if "5K" in e["title"])
+    assert five_k_pr["activity_id"] == 100
+    assert five_k_pr["moving_time"] == 1200
 
 
 def test_timeline_combined(client: TestClient, session: Session):

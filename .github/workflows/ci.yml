@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
@@ -13,6 +17,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/pyproject.toml
 
       - name: Install dependencies
         run: cd backend && uv pip install --system ".[dev]"
@@ -49,5 +56,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build Docker image
-        run: docker build -t stravviz:ci .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: stravviz:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

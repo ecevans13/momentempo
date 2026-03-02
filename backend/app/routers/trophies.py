@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from sqlmodel import Session, col, func, select
 
-from ..models import Activity, Milestone
+from ..models import Activity, BestEffort, Milestone
 
 logger = logging.getLogger(__name__)
 
@@ -14,14 +14,25 @@ router = APIRouter(prefix="/api/trophies", tags=["trophies"])
 
 RUN_SPORT_TYPES = {"Run", "TrailRun", "VirtualRun", "Treadmill"}
 
-# Standard PR distances with tolerance ranges (meters)
+# Maps display names to Strava best_efforts names for each standard distance.
+# Strava names are lowercase as returned by their API.
 PR_DISTANCES = [
-    {"name": "1 Mile", "target": 1609, "min": 1500, "max": 1800},
-    {"name": "5K", "target": 5000, "min": 4800, "max": 5500},
-    {"name": "10K", "target": 10000, "min": 9500, "max": 11000},
-    {"name": "Half Marathon", "target": 21097, "min": 20500, "max": 22000},
-    {"name": "Marathon", "target": 42195, "min": 41500, "max": 43000},
+    {"name": "1 Mile", "target": 1609, "strava_names": ["1 mile"]},
+    {"name": "5K", "target": 5000, "strava_names": ["5k"]},
+    {"name": "10K", "target": 10000, "strava_names": ["10k"]},
+    {"name": "Half Marathon", "target": 21097, "strava_names": ["half-marathon", "half marathon"]},
+    {"name": "Marathon", "target": 42195, "strava_names": ["marathon"]},
 ]
+
+# No-data placeholder for a PR slot
+_EMPTY_PR = {
+    "activity_id": None,
+    "activity_name": None,
+    "moving_time": None,
+    "distance": None,
+    "start_date": None,
+    "average_heartrate": None,
+}
 
 
 def _get_session(request: Request) -> Session:
@@ -30,46 +41,84 @@ def _get_session(request: Request) -> Session:
 
 @router.get("/prs")
 def get_prs(request: Request):
-    """Compute PRs for standard distances from stored activity data."""
+    """Get PRs for standard distances from Strava best-effort data.
+
+    Uses the BestEffort table (populated by /api/sync/best-efforts) which
+    contains sub-activity best efforts at standard distances. Falls back
+    to total-activity-distance matching if no best efforts are synced yet.
+    """
     with _get_session(request) as session:
+        # Check if we have any best effort data
+        has_best_efforts = session.exec(
+            select(func.count(BestEffort.id)).where(BestEffort.id.isnot(None))  # type: ignore[union-attr]
+        ).one() > 0
+
         prs = []
         for dist in PR_DISTANCES:
-            # Find the fastest run-like activity within the distance range
-            stmt = (
-                select(Activity)
-                .where(col(Activity.sport_type).in_(RUN_SPORT_TYPES))
-                .where(col(Activity.distance) >= dist["min"])
-                .where(col(Activity.distance) <= dist["max"])
-                .where(col(Activity.moving_time) > 0)
-                .order_by(col(Activity.moving_time).asc())
-                .limit(1)
-            )
-            activity = session.exec(stmt).first()
+            pr_data = {
+                "distance_name": dist["name"],
+                "distance_target_m": dist["target"],
+                **_EMPTY_PR,
+            }
 
-            if activity:
-                prs.append({
-                    "distance_name": dist["name"],
-                    "distance_target_m": dist["target"],
-                    "activity_id": activity.id,
-                    "activity_name": activity.name,
-                    "moving_time": activity.moving_time,
-                    "distance": activity.distance,
-                    "start_date": activity.start_date,
-                    "average_heartrate": activity.average_heartrate,
-                })
+            if has_best_efforts:
+                # Primary: query BestEffort table for the fastest effort at this distance
+                names_lower = dist["strava_names"]
+                stmt = (
+                    select(BestEffort)
+                    .where(func.lower(BestEffort.name).in_(names_lower))
+                    .where(col(BestEffort.moving_time) > 0)
+                    .order_by(col(BestEffort.moving_time).asc())
+                    .limit(1)
+                )
+                effort = session.exec(stmt).first()
+
+                if effort:
+                    # Look up the activity for heartrate data
+                    activity = session.get(Activity, effort.activity_id)
+                    pr_data.update({
+                        "activity_id": effort.activity_id,
+                        "activity_name": effort.activity_name,
+                        "moving_time": effort.moving_time,
+                        "distance": effort.distance,
+                        "start_date": effort.start_date or (activity.start_date if activity else None),
+                        "average_heartrate": activity.average_heartrate if activity else None,
+                    })
             else:
-                prs.append({
-                    "distance_name": dist["name"],
-                    "distance_target_m": dist["target"],
-                    "activity_id": None,
-                    "activity_name": None,
-                    "moving_time": None,
-                    "distance": None,
-                    "start_date": None,
-                    "average_heartrate": None,
-                })
+                # Fallback: match by total activity distance (legacy behavior)
+                # This is less accurate but works before best efforts are synced
+                FALLBACK_RANGES = {
+                    "1 Mile": (1500, 1800),
+                    "5K": (4800, 5500),
+                    "10K": (9500, 11000),
+                    "Half Marathon": (20500, 22000),
+                    "Marathon": (41500, 43000),
+                }
+                dist_range = FALLBACK_RANGES.get(dist["name"])
+                if dist_range:
+                    stmt = (
+                        select(Activity)
+                        .where(col(Activity.sport_type).in_(RUN_SPORT_TYPES))
+                        .where(col(Activity.distance) >= dist_range[0])
+                        .where(col(Activity.distance) <= dist_range[1])
+                        .where(col(Activity.moving_time) > 0)
+                        .order_by(col(Activity.moving_time).asc())
+                        .limit(1)
+                    )
+                    activity = session.exec(stmt).first()
+                    if activity:
+                        pr_data.update({
+                            "activity_id": activity.id,
+                            "activity_name": activity.name,
+                            "moving_time": activity.moving_time,
+                            "distance": activity.distance,
+                            "start_date": activity.start_date,
+                            "average_heartrate": activity.average_heartrate,
+                        })
 
-        return {"prs": prs}
+            prs.append(pr_data)
+
+        return {"prs": prs, "source": "best_efforts" if has_best_efforts else "activity_distance"}
 
 
 class MilestoneCreate(BaseModel):
@@ -136,27 +185,67 @@ def get_timeline(request: Request):
     with _get_session(request) as session:
         events = []
 
+        has_best_efforts = session.exec(
+            select(func.count(BestEffort.id)).where(BestEffort.id.isnot(None))  # type: ignore[union-attr]
+        ).one() > 0
+
         # Add PRs as timeline events
         for dist in PR_DISTANCES:
-            stmt = (
-                select(Activity)
-                .where(col(Activity.sport_type).in_(RUN_SPORT_TYPES))
-                .where(col(Activity.distance) >= dist["min"])
-                .where(col(Activity.distance) <= dist["max"])
-                .where(col(Activity.moving_time) > 0)
-                .order_by(col(Activity.moving_time).asc())
-                .limit(1)
-            )
-            activity = session.exec(stmt).first()
-            if activity:
-                events.append({
-                    "type": "pr",
-                    "title": f"{dist['name']} PR",
-                    "subtitle": activity.name,
-                    "date": activity.start_date,
-                    "moving_time": activity.moving_time,
-                    "activity_id": activity.id,
-                })
+            pr_event = None
+
+            if has_best_efforts:
+                names_lower = dist["strava_names"]
+                stmt = (
+                    select(BestEffort)
+                    .where(func.lower(BestEffort.name).in_(names_lower))
+                    .where(col(BestEffort.moving_time) > 0)
+                    .order_by(col(BestEffort.moving_time).asc())
+                    .limit(1)
+                )
+                effort = session.exec(stmt).first()
+                if effort:
+                    activity = session.get(Activity, effort.activity_id)
+                    pr_event = {
+                        "type": "pr",
+                        "title": f"{dist['name']} PR",
+                        "subtitle": effort.activity_name,
+                        "date": effort.start_date or (activity.start_date if activity else ""),
+                        "moving_time": effort.moving_time,
+                        "activity_id": effort.activity_id,
+                    }
+            else:
+                # Fallback: match by total activity distance
+                FALLBACK_RANGES = {
+                    "1 Mile": (1500, 1800),
+                    "5K": (4800, 5500),
+                    "10K": (9500, 11000),
+                    "Half Marathon": (20500, 22000),
+                    "Marathon": (41500, 43000),
+                }
+                dist_range = FALLBACK_RANGES.get(dist["name"])
+                if dist_range:
+                    stmt = (
+                        select(Activity)
+                        .where(col(Activity.sport_type).in_(RUN_SPORT_TYPES))
+                        .where(col(Activity.distance) >= dist_range[0])
+                        .where(col(Activity.distance) <= dist_range[1])
+                        .where(col(Activity.moving_time) > 0)
+                        .order_by(col(Activity.moving_time).asc())
+                        .limit(1)
+                    )
+                    activity = session.exec(stmt).first()
+                    if activity:
+                        pr_event = {
+                            "type": "pr",
+                            "title": f"{dist['name']} PR",
+                            "subtitle": activity.name,
+                            "date": activity.start_date,
+                            "moving_time": activity.moving_time,
+                            "activity_id": activity.id,
+                        }
+
+            if pr_event:
+                events.append(pr_event)
 
         # Add achieved milestones
         stmt = (
