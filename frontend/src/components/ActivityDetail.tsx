@@ -10,6 +10,9 @@ import {
 } from "../utils/format";
 import SplitsTable from "./SplitsTable";
 import HRZoneChart from "./HRZoneChart";
+import PaceDecayChart from "./PaceDecayChart";
+import HRDriftChart from "./HRDriftChart";
+import ElevationProfile from "./ElevationProfile";
 
 const RUN_TYPES = ["Run", "TrailRun", "VirtualRun", "Treadmill"];
 
@@ -70,6 +73,10 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
     ? (detail.moving_time / detail.distance) * 1000
     : null;
 
+  const splits = detail.splits_km.length > 0 ? detail.splits_km : detail.splits_mi;
+  const splitsWithHR = splits.filter((s) => s.average_heartrate !== null);
+  const hasElevation = splits.some((s) => s.elevation_difference !== 0);
+
   return (
     <div className="space-y-6">
       {/* Back button + header */}
@@ -127,6 +134,27 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
       {zones && zones.has_zones && zones.zones.length > 0 && (
         <Section title="Heart Rate Zones">
           <HRZoneChart zones={zones.zones} totalTime={zones.total_time_seconds ?? 0} />
+        </Section>
+      )}
+
+      {/* Pace Decay */}
+      {isRun && splits.length > 1 && (
+        <Section title="Pace Decay">
+          <PaceDecayChart splits={splits} />
+        </Section>
+      )}
+
+      {/* HR Drift */}
+      {isRun && splitsWithHR.length > 1 && (
+        <Section title="Heart Rate Drift">
+          <HRDriftChart splits={splitsWithHR} />
+        </Section>
+      )}
+
+      {/* Elevation Profile */}
+      {hasElevation && splits.length > 1 && (
+        <Section title="Elevation Profile">
+          <ElevationProfile splits={splits} />
         </Section>
       )}
 

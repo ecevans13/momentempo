@@ -164,3 +164,53 @@ export interface TimelineEvent {
 export type Period = "week" | "month" | "year" | "all";
 export type Metric = "distance" | "duration" | "pace" | "elevation" | "count";
 export type Granularity = "weekly" | "monthly";
+
+// Insights types
+
+export interface HeatmapDay {
+  date: string;
+  load: number;
+}
+
+export interface HeatmapResponse {
+  months: number;
+  days: HeatmapDay[];
+  max_load: number;
+}
+
+export interface AnchorEffort {
+  distance_name: string;
+  distance_m: number;
+  time_seconds: number;
+  activity_id: number;
+  activity_name: string;
+  start_date: string;
+}
+
+export interface RacePrediction {
+  distance_name: string;
+  distance_m: number;
+  predicted_seconds: number;
+  confidence: "high" | "medium" | "low";
+  based_on: string;
+}
+
+export interface RacePredictionsResponse {
+  anchor_efforts: AnchorEffort[];
+  predictions: RacePrediction[];
+  vdot_estimate: number | null;
+}
+
+export interface TrainingInsight {
+  type: string;
+  title: string;
+  description: string;
+  correlation: number;
+  data_points: number;
+}
+
+export interface WhatsWorkingResponse {
+  insights: TrainingInsight[];
+  weeks_analyzed: number;
+  insufficient_data: boolean;
+}

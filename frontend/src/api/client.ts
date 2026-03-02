@@ -6,6 +6,9 @@ import type {
   ZonesResponse,
   SyncStatusResponse,
   SyncTriggerResponse,
+  HeatmapResponse,
+  RacePredictionsResponse,
+  WhatsWorkingResponse,
   Period,
   Metric,
   Granularity,
@@ -99,4 +102,16 @@ export function deleteMilestone(id: number): Promise<void> {
 
 export function fetchTimeline(): Promise<{ events: import("./types").TimelineEvent[] }> {
   return fetchJSON("/api/trophies/timeline");
+}
+
+export function fetchHeatmap(months: number = 12): Promise<HeatmapResponse> {
+  return fetchJSON(`/api/insights/heatmap?months=${months}`);
+}
+
+export function fetchRacePredictions(): Promise<RacePredictionsResponse> {
+  return fetchJSON("/api/insights/race-predictions");
+}
+
+export function fetchWhatsWorking(): Promise<WhatsWorkingResponse> {
+  return fetchJSON("/api/insights/whats-working");
 }

@@ -5,13 +5,15 @@ import Layout from "./components/Layout";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 const DashboardView = lazy(() => import("./views/DashboardView"));
+const InsightsView = lazy(() => import("./views/InsightsView"));
 const GearView = lazy(() => import("./views/GearView"));
 const TrophyView = lazy(() => import("./views/TrophyView"));
 
-type Tab = "dashboard" | "gear" | "trophies";
+type Tab = "dashboard" | "insights" | "gear" | "trophies";
 
 const TABS: { value: Tab; label: string }[] = [
   { value: "dashboard", label: "Dashboard" },
+  { value: "insights", label: "Insights" },
   { value: "gear", label: "Gear" },
   { value: "trophies", label: "Trophies" },
 ];
@@ -67,6 +69,7 @@ export default function App() {
         <ErrorBoundary>
           <Suspense fallback={<TabSpinner />}>
             {tab === "dashboard" && <DashboardView />}
+            {tab === "insights" && <InsightsView />}
             {tab === "gear" && <GearView />}
             {tab === "trophies" && <TrophyView />}
           </Suspense>
