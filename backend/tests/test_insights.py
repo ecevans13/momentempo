@@ -171,3 +171,167 @@ def test_whats_working_ignores_non_runs(client: TestClient, session: Session):
     response = client.get("/api/insights/whats-working")
     data = response.json()
     assert data["insufficient_data"] is True
+
+
+# --- Fitness Model tests ---
+
+def test_fitness_empty_db(client: TestClient):
+    response = client.get("/api/insights/fitness")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["data"] == []
+    assert data["lthr_used"] is None
+
+
+def test_fitness_auto_lthr(client: TestClient, session: Session):
+    now = int(time.time())
+    _make_activity(
+        session, id=301,
+        start_date_epoch=now - 86400,
+        start_date_local="2026-02-28T08:00:00",
+        moving_time=3600, distance=10000,
+        has_heartrate=True, average_heartrate=150.0, max_heartrate=185.0,
+        sport_type="Run",
+    )
+    response = client.get("/api/insights/fitness?months=6")
+    data = response.json()
+    assert data["lthr_source"] == "auto"
+    # 85% of 185 = 157
+    assert data["lthr_used"] == 157
+    assert len(data["data"]) >= 1
+
+
+def test_fitness_user_lthr(client: TestClient, session: Session):
+    now = int(time.time())
+    _make_activity(
+        session, id=302,
+        start_date_epoch=now - 86400,
+        start_date_local="2026-02-28T08:00:00",
+        moving_time=3600, distance=10000,
+        has_heartrate=True, average_heartrate=150.0, max_heartrate=185.0,
+        sport_type="Run",
+    )
+    response = client.get("/api/insights/fitness?months=6&lthr=165")
+    data = response.json()
+    assert data["lthr_source"] == "user"
+    assert data["lthr_used"] == 165
+
+
+def test_fitness_tss_calculation(client: TestClient, session: Session):
+    now = int(time.time())
+    _make_activity(
+        session, id=303,
+        start_date_epoch=now - 86400,
+        start_date_local="2026-02-28T08:00:00",
+        moving_time=3600, distance=10000,
+        has_heartrate=True, average_heartrate=160.0, max_heartrate=185.0,
+        sport_type="Run",
+    )
+    response = client.get("/api/insights/fitness?months=6&lthr=160")
+    data = response.json()
+    # hrTSS = (3600 * 160 * 1.0) / (160 * 3600) * 100 = 100
+    day_data = [d for d in data["data"] if d["tss"] > 0]
+    assert len(day_data) == 1
+    assert day_data[0]["tss"] == 100.0
+
+
+def test_fitness_ignores_no_hr(client: TestClient, session: Session):
+    now = int(time.time())
+    _make_activity(
+        session, id=304,
+        start_date_epoch=now - 86400,
+        start_date_local="2026-02-28T08:00:00",
+        moving_time=3600, distance=10000,
+        has_heartrate=False, average_heartrate=None,
+        sport_type="Run",
+    )
+    response = client.get("/api/insights/fitness")
+    data = response.json()
+    assert data["data"] == []
+
+
+def test_fitness_ema_convergence(client: TestClient, session: Session):
+    """With consistent daily training, CTL should grow toward the daily TSS value."""
+    now = int(time.time())
+    for i in range(60):
+        _make_activity(
+            session, id=400 + i,
+            start_date_epoch=now - (60 - i) * 86400,
+            start_date_local=f"2026-{1 + (i // 28):02d}-{1 + (i % 28):02d}T08:00:00",
+            moving_time=3600, distance=10000,
+            has_heartrate=True, average_heartrate=160.0, max_heartrate=185.0,
+            sport_type="Run",
+        )
+    response = client.get("/api/insights/fitness?months=6&lthr=160")
+    data = response.json()
+    # After 60 days of consistent training, CTL should be approaching daily TSS (100)
+    last_point = data["data"][-1]
+    assert last_point["ctl"] > 50  # should be converging toward 100
+
+
+# --- Weekly Report tests ---
+
+def test_weekly_report_empty_db(client: TestClient):
+    response = client.get("/api/insights/weekly-report")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["has_data"] is False
+    assert "No activities" in data["summary_text"]
+
+
+def test_weekly_report_basic_stats(client: TestClient, session: Session):
+    now = int(time.time())
+    _make_activity(
+        session, id=501,
+        start_date_epoch=now - 3600,  # 1 hour ago = this week
+        start_date_local="2026-03-02T08:00:00",
+        distance=5000, moving_time=1500,
+        sport_type="Run",
+    )
+    response = client.get("/api/insights/weekly-report")
+    data = response.json()
+    assert data["has_data"] is True
+    assert data["stats"]["run_count"] == 1
+    assert data["stats"]["total_distance"] == 5000
+
+
+def test_weekly_report_comparison(client: TestClient, session: Session):
+    now = int(time.time())
+    # This week activity
+    _make_activity(
+        session, id=601,
+        start_date_epoch=now - 3600,
+        start_date_local="2026-03-02T08:00:00",
+        distance=10000, moving_time=3000,
+        sport_type="Run",
+    )
+    # Last week activity
+    _make_activity(
+        session, id=602,
+        start_date_epoch=now - 7 * 86400,
+        start_date_local="2026-02-23T08:00:00",
+        distance=5000, moving_time=1500,
+        sport_type="Run",
+    )
+    response = client.get("/api/insights/weekly-report")
+    data = response.json()
+    # This week = 10km, last week = 5km -> +100%
+    assert data["vs_last_week"]["total_distance"] == 100.0
+
+
+def test_weekly_report_zone_distribution(client: TestClient, session: Session):
+    now = int(time.time())
+    _make_activity(
+        session, id=701,
+        start_date_epoch=now - 3600,
+        start_date_local="2026-03-02T08:00:00",
+        distance=5000, moving_time=1500,
+        sport_type="Run",
+        has_heartrate=True, average_heartrate=155.0, max_heartrate=185.0,
+    )
+    response = client.get("/api/insights/weekly-report")
+    data = response.json()
+    assert "zone_distribution" in data
+    total_pct = sum(data["zone_distribution"].values())
+    # Should sum to ~100%
+    assert 99 <= total_pct <= 101

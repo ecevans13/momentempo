@@ -98,6 +98,19 @@ class SyncState(SQLModel, table=True):
     last_sync_activities_fetched: int = 0  # Activities fetched in last sync run
 
 
+class BestEffort(SQLModel, table=True):
+    """Strava best effort at a standard distance within an activity."""
+    id: int | None = Field(default=None, primary_key=True)
+    activity_id: int = Field(index=True)  # Strava activity ID
+    activity_name: str = ""
+    name: str  # e.g. "1 mile", "5K" — as Strava returns it
+    distance: float = 0.0  # meters
+    moving_time: int = 0  # seconds
+    elapsed_time: int = 0  # seconds
+    start_date: str = ""  # ISO 8601 UTC
+    pr_rank: int | None = None  # Strava PR rank (1 = all-time best, null = not a PR)
+
+
 class Milestone(SQLModel, table=True):
     """User-defined custom milestone for the trophy case."""
     id: int | None = Field(default=None, primary_key=True)
@@ -105,3 +118,13 @@ class Milestone(SQLModel, table=True):
     description: str = ""
     achieved_at: str | None = None  # ISO date string when achieved, null if not yet
     created_at: float = Field(default_factory=time.time)
+
+
+class HealthMetric(SQLModel, table=True):
+    """Apple HealthKit metric imported from export.xml."""
+    id: int | None = Field(default=None, primary_key=True)
+    metric_type: str = Field(index=True)  # e.g. "BodyMass", "RestingHeartRate"
+    value: float
+    unit: str  # e.g. "kg", "bpm", "%"
+    date: str = Field(index=True)  # YYYY-MM-DD
+    source: str = ""  # source device/app

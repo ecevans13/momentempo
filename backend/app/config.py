@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     strava_redirect_uri: str = "http://localhost:8000/auth/callback"
     database_url: str = "sqlite:///backend/data/stravviz.db"
     ssl_verify: bool = True
+    anthropic_api_key: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=str(_PROJECT_ROOT / ".env"),

@@ -1,14 +1,15 @@
-"""Insights endpoints: training heatmap, race predictions, and what's working analysis."""
+"""Insights endpoints: training heatmap, race predictions, what's working, fitness model, weekly report."""
 
 import logging
 import math
 import time
-from datetime import datetime, timezone
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Query, Request
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, func, select
 
-from ..models import Activity
+from ..models import Activity, BestEffort
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +26,13 @@ PREDICTION_DISTANCES = [
     {"name": "50K", "meters": 50000},
 ]
 
-# Anchor distances with tolerance ranges (reuse pattern from trophies)
+# Anchor distances: Strava best_efforts names + fallback tolerance ranges
 ANCHOR_DISTANCES = [
-    {"name": "1 Mile", "target": 1609, "min": 1500, "max": 1800},
-    {"name": "5K", "target": 5000, "min": 4800, "max": 5500},
-    {"name": "10K", "target": 10000, "min": 9500, "max": 11000},
-    {"name": "Half Marathon", "target": 21097, "min": 20500, "max": 22000},
-    {"name": "Marathon", "target": 42195, "min": 41500, "max": 43000},
+    {"name": "1 Mile", "target": 1609, "min": 1500, "max": 1800, "strava_names": ["1 mile"]},
+    {"name": "5K", "target": 5000, "min": 4800, "max": 5500, "strava_names": ["5k"]},
+    {"name": "10K", "target": 10000, "min": 9500, "max": 11000, "strava_names": ["10k"]},
+    {"name": "Half Marathon", "target": 21097, "min": 20500, "max": 22000, "strava_names": ["half-marathon", "half marathon"]},
+    {"name": "Marathon", "target": 42195, "min": 41500, "max": 43000, "strava_names": ["marathon"]},
 ]
 
 
@@ -124,27 +125,52 @@ def heatmap_day(
 def race_predictions(request: Request):
     """Predict race times using Riegel formula based on PR anchor efforts."""
     with _get_session(request) as session:
+        has_best_efforts = session.exec(
+            select(func.count(BestEffort.id)).where(BestEffort.id.isnot(None))  # type: ignore[union-attr]
+        ).one() > 0
+
         anchor_efforts = []
         for dist in ANCHOR_DISTANCES:
-            stmt = (
-                select(Activity)
-                .where(col(Activity.sport_type).in_(RUN_SPORT_TYPES))
-                .where(col(Activity.distance) >= dist["min"])
-                .where(col(Activity.distance) <= dist["max"])
-                .where(col(Activity.moving_time) > 0)
-                .order_by(col(Activity.moving_time).asc())
-                .limit(1)
-            )
-            activity = session.exec(stmt).first()
-            if activity:
-                anchor_efforts.append({
-                    "distance_name": dist["name"],
-                    "distance_m": dist["target"],
-                    "time_seconds": activity.moving_time,
-                    "activity_id": activity.id,
-                    "activity_name": activity.name,
-                    "start_date": activity.start_date,
-                })
+            if has_best_efforts:
+                names_lower = dist["strava_names"]
+                stmt = (
+                    select(BestEffort)
+                    .where(func.lower(BestEffort.name).in_(names_lower))
+                    .where(col(BestEffort.moving_time) > 0)
+                    .order_by(col(BestEffort.moving_time).asc())
+                    .limit(1)
+                )
+                effort = session.exec(stmt).first()
+                if effort:
+                    anchor_efforts.append({
+                        "distance_name": dist["name"],
+                        "distance_m": dist["target"],
+                        "time_seconds": effort.moving_time,
+                        "activity_id": effort.activity_id,
+                        "activity_name": effort.activity_name,
+                        "start_date": effort.start_date,
+                    })
+            else:
+                # Fallback: match by total activity distance
+                stmt = (
+                    select(Activity)
+                    .where(col(Activity.sport_type).in_(RUN_SPORT_TYPES))
+                    .where(col(Activity.distance) >= dist["min"])
+                    .where(col(Activity.distance) <= dist["max"])
+                    .where(col(Activity.moving_time) > 0)
+                    .order_by(col(Activity.moving_time).asc())
+                    .limit(1)
+                )
+                activity = session.exec(stmt).first()
+                if activity:
+                    anchor_efforts.append({
+                        "distance_name": dist["name"],
+                        "distance_m": dist["target"],
+                        "time_seconds": activity.moving_time,
+                        "activity_id": activity.id,
+                        "activity_name": activity.name,
+                        "start_date": activity.start_date,
+                    })
 
     if not anchor_efforts:
         return {
@@ -356,4 +382,193 @@ def whats_working(request: Request):
         "insights": insights,
         "weeks_analyzed": len(week_data),
         "insufficient_data": False,
+    }
+
+
+@router.get("/fitness")
+def fitness_model(
+    request: Request,
+    months: int = Query(6, ge=1, le=24),
+    lthr: int | None = Query(None, ge=100, le=220),
+):
+    """Fatigue & Freshness model: hrTSS, CTL (42d EMA), ATL (7d EMA), TSB."""
+    cutoff = int(time.time() - months * 30 * 86400)
+
+    with _get_session(request) as session:
+        stmt = (
+            select(Activity)
+            .where(col(Activity.has_heartrate) == True)  # noqa: E712
+            .where(col(Activity.average_heartrate).isnot(None))
+            .where(col(Activity.start_date_epoch) >= cutoff)
+            .order_by(col(Activity.start_date_epoch).asc())
+        )
+        activities = session.exec(stmt).all()
+
+    if not activities:
+        return {"lthr_used": None, "lthr_source": None, "data": []}
+
+    # Determine LTHR
+    max_hr = max(a.max_heartrate or a.average_heartrate or 0 for a in activities)
+    if lthr:
+        lthr_used = lthr
+        lthr_source = "user"
+    else:
+        lthr_used = int(max_hr * 0.85) if max_hr > 0 else 160
+        lthr_source = "auto"
+
+    # Compute daily TSS from hrTSS formula
+    daily_tss: dict[str, float] = defaultdict(float)
+    for a in activities:
+        date_str = a.start_date_local[:10] if a.start_date_local else a.start_date[:10]
+        avg_hr = a.average_heartrate or 0
+        if avg_hr <= 0 or lthr_used <= 0:
+            continue
+        intensity_factor = avg_hr / lthr_used
+        hr_tss = (a.moving_time * avg_hr * intensity_factor) / (lthr_used * 3600) * 100
+        daily_tss[date_str] += hr_tss
+
+    if not daily_tss:
+        return {"lthr_used": lthr_used, "lthr_source": lthr_source, "data": []}
+
+    # Fill in date range (including zero days) for proper EMA
+    sorted_dates = sorted(daily_tss.keys())
+    start_date = datetime.strptime(sorted_dates[0], "%Y-%m-%d").date()
+    end_date = datetime.strptime(sorted_dates[-1], "%Y-%m-%d").date()
+
+    data = []
+    ctl = 0.0
+    atl = 0.0
+    current = start_date
+    while current <= end_date:
+        ds = current.strftime("%Y-%m-%d")
+        tss = daily_tss.get(ds, 0.0)
+        # Exponential moving averages
+        ctl = ctl + (tss - ctl) / 42.0
+        atl = atl + (tss - atl) / 7.0
+        tsb = ctl - atl
+        data.append({
+            "date": ds,
+            "tss": round(tss, 1),
+            "ctl": round(ctl, 1),
+            "atl": round(atl, 1),
+            "tsb": round(tsb, 1),
+        })
+        current += timedelta(days=1)
+
+    return {
+        "lthr_used": lthr_used,
+        "lthr_source": lthr_source,
+        "data": data,
+    }
+
+
+@router.get("/weekly-report")
+def weekly_report(request: Request):
+    """Weekly training report: this week vs last week comparison."""
+    now = datetime.now(timezone.utc)
+    # Start of this week (Monday)
+    this_monday = (now - timedelta(days=now.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    last_monday = this_monday - timedelta(days=7)
+    this_monday_epoch = int(this_monday.timestamp())
+    last_monday_epoch = int(last_monday.timestamp())
+
+    with _get_session(request) as session:
+        stmt = (
+            select(Activity)
+            .where(col(Activity.start_date_epoch) >= last_monday_epoch)
+            .order_by(col(Activity.start_date_epoch).asc())
+        )
+        activities = session.exec(stmt).all()
+
+        # Get max HR for zone computation
+        max_hr_result = session.exec(
+            select(func.max(Activity.max_heartrate)).where(
+                col(Activity.has_heartrate) == True  # noqa: E712
+            )
+        ).one()
+        max_hr = max_hr_result or 190
+
+    this_week = [a for a in activities if a.start_date_epoch >= this_monday_epoch]
+    last_week = [
+        a for a in activities
+        if last_monday_epoch <= a.start_date_epoch < this_monday_epoch
+    ]
+
+    def _compute_stats(acts: list[Activity]) -> dict:
+        runs = [a for a in acts if a.sport_type in RUN_SPORT_TYPES]
+        total_dist = sum(a.distance for a in acts)
+        total_time = sum(a.moving_time for a in acts)
+        run_dist = sum(a.distance for a in runs)
+        run_time = sum(a.moving_time for a in runs)
+        longest_run = max((a.distance for a in runs), default=0)
+        avg_pace = (run_time / run_dist * 1000) if run_dist > 0 else None
+        return {
+            "total_distance": round(total_dist),
+            "total_duration": total_time,
+            "run_count": len(runs),
+            "activity_count": len(acts),
+            "longest_run": round(longest_run),
+            "avg_pace": round(avg_pace, 1) if avg_pace else None,
+        }
+
+    tw_stats = _compute_stats(this_week)
+    lw_stats = _compute_stats(last_week)
+
+    # Comparison (% change)
+    vs_last_week = {}
+    for key in ["total_distance", "total_duration", "run_count", "longest_run"]:
+        lw_val = lw_stats[key]
+        tw_val = tw_stats[key]
+        if lw_val > 0:
+            vs_last_week[key] = round((tw_val - lw_val) / lw_val * 100, 1)
+        elif tw_val > 0:
+            vs_last_week[key] = 100.0
+        else:
+            vs_last_week[key] = 0.0
+
+    # Zone distribution from this week's HR data
+    zones = {"Z1": 0, "Z2": 0, "Z3": 0, "Z4": 0, "Z5": 0}
+    hr_activities = [a for a in this_week if a.has_heartrate and a.average_heartrate]
+    for a in hr_activities:
+        pct = (a.average_heartrate / max_hr) * 100
+        if pct < 60:
+            zones["Z1"] += a.moving_time
+        elif pct < 70:
+            zones["Z2"] += a.moving_time
+        elif pct < 80:
+            zones["Z3"] += a.moving_time
+        elif pct < 90:
+            zones["Z4"] += a.moving_time
+        else:
+            zones["Z5"] += a.moving_time
+
+    total_zone_time = sum(zones.values())
+    zone_pcts = {
+        k: round(v / total_zone_time * 100, 1) if total_zone_time > 0 else 0
+        for k, v in zones.items()
+    }
+
+    # Template summary
+    has_data = tw_stats["activity_count"] > 0
+    if has_data:
+        dist_km = tw_stats["total_distance"] / 1000
+        summary = f"This week you logged {tw_stats['activity_count']} activities covering {dist_km:.1f} km"
+        if tw_stats["run_count"] > 0:
+            summary += f" with {tw_stats['run_count']} runs"
+        summary += "."
+        if vs_last_week.get("total_distance", 0) > 0:
+            summary += f" That's {vs_last_week['total_distance']:.0f}% more distance than last week."
+        elif vs_last_week.get("total_distance", 0) < 0:
+            summary += f" That's {abs(vs_last_week['total_distance']):.0f}% less distance than last week."
+    else:
+        summary = "No activities recorded this week yet. Get out there!"
+
+    return {
+        "summary_text": summary,
+        "stats": tw_stats,
+        "vs_last_week": vs_last_week,
+        "zone_distribution": zone_pcts,
+        "has_data": has_data,
     }

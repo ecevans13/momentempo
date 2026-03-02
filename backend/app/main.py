@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
 from .database import create_db_and_tables, get_engine
-from .routers import activity_detail, auth, dashboard, gear, health, insights, sync, trophies
+from .routers import activity_detail, auth, coach, dashboard, gear, health, health_import, insights, sync, trophies
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +115,8 @@ app.include_router(activity_detail.router)
 app.include_router(gear.router)
 app.include_router(trophies.router)
 app.include_router(insights.router)
+app.include_router(health_import.router)
+app.include_router(coach.router)
 
 # --- Static file serving for production ---
 # Mount the assets directory if the frontend has been built

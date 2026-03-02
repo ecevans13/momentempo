@@ -1,8 +1,12 @@
 import { useState } from "react";
 import ErrorBoundary from "../components/ErrorBoundary";
+import WeeklyReport from "../components/WeeklyReport";
 import TrainingHeatmap from "../components/TrainingHeatmap";
+import FitnessChart from "../components/FitnessChart";
 import RacePredictor from "../components/RacePredictor";
 import WhatsWorking from "../components/WhatsWorking";
+import TrainingCoach from "../components/TrainingCoach";
+import HealthImport from "../components/HealthImport";
 import ActivityDetail from "../components/ActivityDetail";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -31,8 +35,20 @@ export default function InsightsView() {
   return (
     <div className="space-y-6">
       <ErrorBoundary>
+        <Section title="Weekly Report">
+          <WeeklyReport />
+        </Section>
+      </ErrorBoundary>
+
+      <ErrorBoundary>
         <Section title="Training Heatmap">
           <TrainingHeatmap onSelectActivity={setSelectedActivityId} />
+        </Section>
+      </ErrorBoundary>
+
+      <ErrorBoundary>
+        <Section title="Fitness & Freshness">
+          <FitnessChart />
         </Section>
       </ErrorBoundary>
 
@@ -45,6 +61,18 @@ export default function InsightsView() {
       <ErrorBoundary>
         <Section title="What's Working">
           <WhatsWorking />
+        </Section>
+      </ErrorBoundary>
+
+      <ErrorBoundary>
+        <Section title="Health Data">
+          <HealthImport />
+        </Section>
+      </ErrorBoundary>
+
+      <ErrorBoundary>
+        <Section title="AI Training Coach">
+          <TrainingCoach />
         </Section>
       </ErrorBoundary>
     </div>

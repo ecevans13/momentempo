@@ -117,6 +117,7 @@ async def get_activity_detail(request: Request, activity_id: int):
             "description": data.get("description", ""),
             "gear_id": data.get("gear_id"),
             "device_name": data.get("device_name"),
+            "summary_polyline": (data.get("map") or {}).get("summary_polyline"),
             "splits_km": splits,
             "splits_mi": splits_mi,
             "laps": laps,

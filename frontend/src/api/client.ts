@@ -10,6 +10,11 @@ import type {
   HeatmapDayResponse,
   RacePredictionsResponse,
   WhatsWorkingResponse,
+  FitnessResponse,
+  WeeklyReportResponse,
+  CoachResponse,
+  HealthImportResponse,
+  HealthSummaryResponse,
   Period,
   Metric,
   Granularity,
@@ -119,4 +124,33 @@ export function fetchRacePredictions(): Promise<RacePredictionsResponse> {
 
 export function fetchWhatsWorking(): Promise<WhatsWorkingResponse> {
   return fetchJSON("/api/insights/whats-working");
+}
+
+export function fetchFitness(months: number = 6, lthr?: number): Promise<FitnessResponse> {
+  const params = new URLSearchParams({ months: String(months) });
+  if (lthr) params.set("lthr", String(lthr));
+  return fetchJSON(`/api/insights/fitness?${params}`);
+}
+
+export function fetchWeeklyReport(): Promise<WeeklyReportResponse> {
+  return fetchJSON("/api/insights/weekly-report");
+}
+
+export function fetchCoachAdvice(): Promise<CoachResponse> {
+  return fetchJSON("/api/coach/advice");
+}
+
+export async function uploadHealthExport(file: File): Promise<HealthImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch("/api/health/import", { method: "POST", body: formData });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `Upload failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export function fetchHealthSummary(): Promise<HealthSummaryResponse> {
+  return fetchJSON("/api/health/summary");
 }

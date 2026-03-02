@@ -83,30 +83,6 @@ export interface Lap {
   total_elevation_gain: number;
 }
 
-export interface ActivityDetailResponse {
-  id: number;
-  name: string;
-  sport_type: string;
-  start_date: string;
-  start_date_local: string;
-  distance: number;
-  moving_time: number;
-  elapsed_time: number;
-  total_elevation_gain: number;
-  average_speed: number;
-  max_speed: number;
-  has_heartrate: boolean;
-  average_heartrate: number | null;
-  max_heartrate: number | null;
-  calories: number;
-  description: string;
-  gear_id: string | null;
-  device_name: string | null;
-  splits_km: Split[];
-  splits_mi: Split[];
-  laps: Lap[];
-}
-
 export interface HRZone {
   zone: string;
   min_hr: number;
@@ -229,4 +205,94 @@ export interface WhatsWorkingResponse {
   insights: TrainingInsight[];
   weeks_analyzed: number;
   insufficient_data: boolean;
+}
+
+// Fitness & Freshness types
+
+export interface FitnessDataPoint {
+  date: string;
+  tss: number;
+  ctl: number;
+  atl: number;
+  tsb: number;
+}
+
+export interface FitnessResponse {
+  lthr_used: number | null;
+  lthr_source: string | null;
+  data: FitnessDataPoint[];
+}
+
+// Weekly Report types
+
+export interface WeeklyReportStats {
+  total_distance: number;
+  total_duration: number;
+  run_count: number;
+  activity_count: number;
+  longest_run: number;
+  avg_pace: number | null;
+}
+
+export interface WeeklyReportResponse {
+  summary_text: string;
+  stats: WeeklyReportStats;
+  vs_last_week: Record<string, number>;
+  zone_distribution: Record<string, number>;
+  has_data: boolean;
+}
+
+// Coach types
+
+export interface CoachResponse {
+  advice: string;
+  generated_at: number;
+  weeks_analyzed: number;
+}
+
+// Health Import types
+
+export interface HealthImportResponse {
+  status: string;
+  records_imported: number;
+  metric_types_found: string[];
+}
+
+export interface HealthMetricSummary {
+  metric_type: string;
+  latest_value: number;
+  unit: string;
+  latest_date: string;
+  trend_pct: number | null;
+}
+
+export interface HealthSummaryResponse {
+  metrics: HealthMetricSummary[];
+  has_data: boolean;
+}
+
+// Activity detail extension
+export interface ActivityDetailResponse {
+  id: number;
+  name: string;
+  sport_type: string;
+  start_date: string;
+  start_date_local: string;
+  distance: number;
+  moving_time: number;
+  elapsed_time: number;
+  total_elevation_gain: number;
+  average_speed: number;
+  max_speed: number;
+  has_heartrate: boolean;
+  average_heartrate: number | null;
+  max_heartrate: number | null;
+  calories: number;
+  description: string;
+  gear_id: string | null;
+  device_name: string | null;
+  summary_polyline: string | null;
+  splits_km: Split[];
+  splits_mi: Split[];
+  laps: Lap[];
 }

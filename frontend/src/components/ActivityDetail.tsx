@@ -13,6 +13,7 @@ import HRZoneChart from "./HRZoneChart";
 import PaceDecayChart from "./PaceDecayChart";
 import HRDriftChart from "./HRDriftChart";
 import ElevationProfile from "./ElevationProfile";
+import RouteReplay from "./RouteReplay";
 
 const RUN_TYPES = ["Run", "TrailRun", "VirtualRun", "Treadmill"];
 
@@ -127,6 +128,17 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
           <StatCard label="Elapsed" value={formatDuration(detail.elapsed_time)} />
         )}
       </div>
+
+      {/* Route Replay */}
+      {detail.summary_polyline && (
+        <Section title="Route Replay">
+          <RouteReplay
+            polyline={detail.summary_polyline}
+            totalDistance={detail.distance}
+            totalTime={detail.moving_time}
+          />
+        </Section>
+      )}
 
       {/* Splits */}
       {(detail.splits_km.length > 0 || detail.splits_mi.length > 0) && (
