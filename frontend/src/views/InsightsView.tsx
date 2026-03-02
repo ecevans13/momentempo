@@ -1,7 +1,9 @@
+import { useState } from "react";
 import ErrorBoundary from "../components/ErrorBoundary";
 import TrainingHeatmap from "../components/TrainingHeatmap";
 import RacePredictor from "../components/RacePredictor";
 import WhatsWorking from "../components/WhatsWorking";
+import ActivityDetail from "../components/ActivityDetail";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -13,11 +15,24 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function InsightsView() {
+  const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
+
+  if (selectedActivityId !== null) {
+    return (
+      <ErrorBoundary>
+        <ActivityDetail
+          activityId={selectedActivityId}
+          onBack={() => setSelectedActivityId(null)}
+        />
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <ErrorBoundary>
         <Section title="Training Heatmap">
-          <TrainingHeatmap />
+          <TrainingHeatmap onSelectActivity={setSelectedActivityId} />
         </Section>
       </ErrorBoundary>
 

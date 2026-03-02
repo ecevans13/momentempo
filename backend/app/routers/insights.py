@@ -88,6 +88,38 @@ def training_heatmap(
     }
 
 
+@router.get("/heatmap/day")
+def heatmap_day(
+    request: Request,
+    date: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"),
+):
+    """Return activities for a specific calendar day (for heatmap drilldown)."""
+    with _get_session(request) as session:
+        stmt = (
+            select(Activity)
+            .where(col(Activity.start_date_local).startswith(date))
+            .order_by(col(Activity.start_date_epoch).asc())
+        )
+        activities = session.exec(stmt).all()
+
+    return {
+        "date": date,
+        "activities": [
+            {
+                "id": a.id,
+                "name": a.name,
+                "sport_type": a.sport_type,
+                "distance": a.distance,
+                "moving_time": a.moving_time,
+                "total_elevation_gain": a.total_elevation_gain,
+                "average_heartrate": a.average_heartrate,
+                "has_heartrate": a.has_heartrate,
+            }
+            for a in activities
+        ],
+    }
+
+
 @router.get("/race-predictions")
 def race_predictions(request: Request):
     """Predict race times using Riegel formula based on PR anchor efforts."""

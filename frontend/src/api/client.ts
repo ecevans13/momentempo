@@ -7,6 +7,7 @@ import type {
   SyncStatusResponse,
   SyncTriggerResponse,
   HeatmapResponse,
+  HeatmapDayResponse,
   RacePredictionsResponse,
   WhatsWorkingResponse,
   Period,
@@ -106,6 +107,10 @@ export function fetchTimeline(): Promise<{ events: import("./types").TimelineEve
 
 export function fetchHeatmap(months: number = 12): Promise<HeatmapResponse> {
   return fetchJSON(`/api/insights/heatmap?months=${months}`);
+}
+
+export function fetchHeatmapDay(date: string): Promise<HeatmapDayResponse> {
+  return fetchJSON(`/api/insights/heatmap/day?date=${date}`);
 }
 
 export function fetchRacePredictions(): Promise<RacePredictionsResponse> {

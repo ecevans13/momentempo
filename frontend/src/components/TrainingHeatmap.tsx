@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useHeatmap } from "../hooks/useInsights";
+import { fetchHeatmapDay } from "../api/client";
+import type { HeatmapDayActivity } from "../api/types";
+import { formatDistance, formatDuration, formatPace, formatElevation } from "../utils/format";
 
 const DAY_LABELS = ["Mon", "", "Wed", "", "Fri", "", "Sun"];
 const CELL_SIZE = 13;
@@ -21,6 +24,14 @@ const COLORS_DARK = [
   "rgb(249, 115, 22)",  // orange-500
 ];
 
+const SPORT_ICONS: Record<string, string> = {
+  Run: "\u{1F3C3}", TrailRun: "\u26F0\uFE0F", VirtualRun: "\u{1F5A5}\uFE0F",
+  Ride: "\u{1F6B4}", GravelRide: "\u{1F6B5}", VirtualRide: "\u{1F5A5}\uFE0F",
+  Swim: "\u{1F3CA}", Hike: "\u{1F97E}", Walk: "\u{1F6B6}", Workout: "\u{1F4AA}",
+};
+
+const RUN_TYPES = new Set(["Run", "TrailRun", "VirtualRun", "Treadmill"]);
+
 function getColor(load: number, maxLoad: number, isDark: boolean): string {
   const palette = isDark ? COLORS_DARK : COLORS;
   if (load === 0) return palette[0];
@@ -35,7 +46,6 @@ function computeStreaks(dates: string[]): { activeDays: number; longestStreak: n
   let longestStreak = 0;
   let currentStreak = 0;
 
-  // Walk through the date range
   const sorted = [...dates].sort();
   const start = new Date(sorted[0]);
   const end = new Date(sorted[sorted.length - 1]);
@@ -53,10 +63,101 @@ function computeStreaks(dates: string[]): { activeDays: number; longestStreak: n
   return { activeDays: dates.length, longestStreak };
 }
 
-export default function TrainingHeatmap() {
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" });
+}
+
+function DayDrilldown({
+  date,
+  activities,
+  loading,
+  onClose,
+  onSelectActivity,
+}: {
+  date: string;
+  activities: HeatmapDayActivity[];
+  loading: boolean;
+  onClose: () => void;
+  onSelectActivity: (id: number) => void;
+}) {
+  return (
+    <div className="mt-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{formatDate(date)}</h3>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="py-4 text-center">
+          <div className="inline-block w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : activities.length === 0 ? (
+        <p className="text-sm text-gray-500">Rest day — no activities recorded.</p>
+      ) : (
+        <div className="space-y-2">
+          {activities.map((a) => {
+            const icon = SPORT_ICONS[a.sport_type] ?? "\u{1F3C5}";
+            const isRun = RUN_TYPES.has(a.sport_type);
+            const pace = isRun && a.distance > 0
+              ? formatPace((a.moving_time / a.distance) * 1000)
+              : null;
+
+            return (
+              <button
+                key={a.id}
+                onClick={() => onSelectActivity(a.id)}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900 w-full text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+              >
+                <span className="text-base flex-shrink-0">{icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{a.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-3 gap-y-0.5">
+                    {a.distance > 0 && <span>{formatDistance(a.distance)}</span>}
+                    <span>{formatDuration(a.moving_time)}</span>
+                    {pace && <span>{pace}</span>}
+                    {a.total_elevation_gain > 0 && <span>{formatElevation(a.total_elevation_gain)}</span>}
+                    {a.has_heartrate && a.average_heartrate && (
+                      <span>{Math.round(a.average_heartrate)} bpm</span>
+                    )}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function TrainingHeatmap({ onSelectActivity }: { onSelectActivity: (id: number) => void }) {
   const { data, loading, error } = useHeatmap(12);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; date: string; load: number } | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dayActivities, setDayActivities] = useState<HeatmapDayActivity[]>([]);
+  const [dayLoading, setDayLoading] = useState(false);
   const isDark = document.documentElement.classList.contains("dark");
+
+  function handleDayClick(date: string) {
+    if (selectedDate === date) {
+      setSelectedDate(null);
+      return;
+    }
+    setSelectedDate(date);
+    setDayLoading(true);
+    fetchHeatmapDay(date)
+      .then((res) => setDayActivities(res.activities))
+      .catch(() => setDayActivities([]))
+      .finally(() => setDayLoading(false));
+  }
 
   if (loading) {
     return (
@@ -147,11 +248,15 @@ export default function TrainingHeatmap() {
                 height={CELL_SIZE}
                 rx={2}
                 fill={getColor(cell.load, maxLoad, isDark)}
+                stroke={cell.date === selectedDate ? "#f97316" : "none"}
+                strokeWidth={cell.date === selectedDate ? 2 : 0}
+                className="cursor-pointer"
                 onMouseEnter={(e) => {
                   const rect = (e.target as SVGRectElement).getBoundingClientRect();
                   setTooltip({ x: rect.x + rect.width / 2, y: rect.y, date: cell.date, load: cell.load });
                 }}
                 onMouseLeave={() => setTooltip(null)}
+                onClick={() => handleDayClick(cell.date)}
               />
             )),
           )}
@@ -173,6 +278,17 @@ export default function TrainingHeatmap() {
         <span><strong className="text-gray-900 dark:text-white">{activeDays}</strong> active days</span>
         <span><strong className="text-gray-900 dark:text-white">{longestStreak}</strong> day longest streak</span>
       </div>
+
+      {/* Day drilldown */}
+      {selectedDate && (
+        <DayDrilldown
+          date={selectedDate}
+          activities={dayActivities}
+          loading={dayLoading}
+          onClose={() => setSelectedDate(null)}
+          onSelectActivity={onSelectActivity}
+        />
+      )}
     </div>
   );
 }

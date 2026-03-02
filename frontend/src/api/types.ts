@@ -178,6 +178,22 @@ export interface HeatmapResponse {
   max_load: number;
 }
 
+export interface HeatmapDayActivity {
+  id: number;
+  name: string;
+  sport_type: string;
+  distance: number;
+  moving_time: number;
+  total_elevation_gain: number;
+  average_heartrate: number | null;
+  has_heartrate: boolean;
+}
+
+export interface HeatmapDayResponse {
+  date: string;
+  activities: HeatmapDayActivity[];
+}
+
 export interface AnchorEffort {
   distance_name: string;
   distance_m: number;

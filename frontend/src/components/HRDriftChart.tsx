@@ -42,7 +42,7 @@ export default function HRDriftChart({ splits }: HRDriftChartProps) {
   return (
     <div>
       <ResponsiveContainer width="100%" height={260}>
-        <ComposedChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+        <ComposedChart data={data} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
           <XAxis
             dataKey="split"
@@ -54,15 +54,15 @@ export default function HRDriftChart({ splits }: HRDriftChartProps) {
             reversed
             tickFormatter={(v: number) => formatPace(v)}
             tick={{ fontSize: 11 }}
-            width={72}
+            width={80}
           />
           <YAxis
             yAxisId="hr"
             orientation="right"
             tick={{ fontSize: 11 }}
-            width={48}
+            width={52}
             tickFormatter={(v: number) => `${v}`}
-            label={{ value: "bpm", angle: 90, position: "insideRight", offset: 10, fontSize: 11 }}
+            label={{ value: "bpm", angle: 90, position: "insideRight", offset: 14, fontSize: 11 }}
           />
           <Tooltip
             formatter={(value: number, name: string) => {

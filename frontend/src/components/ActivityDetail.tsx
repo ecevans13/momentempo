@@ -95,6 +95,11 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
           {detail.sport_type} &middot; {formatRelativeDate(detail.start_date)}
           {detail.device_name && <> &middot; {detail.device_name}</>}
         </p>
+        {detail.description && (
+          <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap mt-2">
+            {detail.description}
+          </p>
+        )}
       </div>
 
       {/* Summary stats */}
@@ -158,14 +163,6 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
         </Section>
       )}
 
-      {/* Description */}
-      {detail.description && (
-        <Section title="Description">
-          <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-            {detail.description}
-          </p>
-        </Section>
-      )}
     </div>
   );
 }

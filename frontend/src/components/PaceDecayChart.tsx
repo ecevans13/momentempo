@@ -33,7 +33,7 @@ export default function PaceDecayChart({ splits }: PaceDecayChartProps) {
 
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <LineChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+      <LineChart data={data} margin={{ top: 8, right: 48, left: 4, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
         <XAxis
           dataKey="split"
@@ -45,7 +45,7 @@ export default function PaceDecayChart({ splits }: PaceDecayChartProps) {
           domain={[minPace - padding, maxPace + padding]}
           tickFormatter={(v: number) => formatPace(v)}
           tick={{ fontSize: 11 }}
-          width={72}
+          width={80}
         />
         <Tooltip
           formatter={(value: number) => [formatPace(value), "Pace"]}

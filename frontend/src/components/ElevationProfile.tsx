@@ -28,7 +28,7 @@ export default function ElevationProfile({ splits }: ElevationProfileProps) {
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <AreaChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+      <AreaChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 0 }}>
         <defs>
           <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
@@ -44,7 +44,7 @@ export default function ElevationProfile({ splits }: ElevationProfileProps) {
         <YAxis
           tickFormatter={(v: number) => formatElevation(v)}
           tick={{ fontSize: 11 }}
-          width={64}
+          width={72}
         />
         <Tooltip
           formatter={(value: number) => [formatElevation(value), "Elevation"]}
