@@ -26,6 +26,12 @@ METRIC_MAP = {
     "HKQuantityTypeIdentifierDietaryProtein": ("DietaryProtein", "g"),
 }
 
+# Metrics where multiple records per day should be summed (not overwritten)
+_SUMMED_METRICS = {"ActiveEnergyBurned", "DietaryEnergyConsumed", "DietaryProtein"}
+
+# Unit conversions (Apple Health may export in lb, °F, etc.)
+_LB_TO_KG = 0.453592
+
 
 def _get_session(request: Request) -> Session:
     return Session(request.app.state.engine)
@@ -95,6 +101,11 @@ async def import_health_data(request: Request, file: UploadFile):
                     if metric_name == "BodyFatPercentage" and value < 1:
                         value = value * 100
 
+                    # Handle lb -> kg conversion for body mass
+                    rec_unit = elem.attrib.get("unit", "")
+                    if metric_name == "BodyMass" and rec_unit == "lb":
+                        value = value * _LB_TO_KG
+
                     batch.append(
                         HealthMetric(
                             metric_type=metric_name,
@@ -127,7 +138,11 @@ async def import_health_data(request: Request, file: UploadFile):
 
 
 def _upsert_batch(session: Session, batch: list[HealthMetric]) -> None:
-    """Insert or update metrics, deduplicating by type+date (keep latest value)."""
+    """Insert or update metrics, deduplicating by type+date.
+
+    For summed metrics (calories, protein), accumulates the daily total.
+    For point-in-time metrics (weight, HR), keeps the latest value.
+    """
     for m in batch:
         existing = session.exec(
             select(HealthMetric)
@@ -135,7 +150,10 @@ def _upsert_batch(session: Session, batch: list[HealthMetric]) -> None:
             .where(col(HealthMetric.date) == m.date)
         ).first()
         if existing:
-            existing.value = m.value
+            if m.metric_type in _SUMMED_METRICS:
+                existing.value = round(existing.value + m.value, 2)
+            else:
+                existing.value = m.value
             existing.source = m.source
             session.add(existing)
         else:

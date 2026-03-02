@@ -37,3 +37,10 @@ __pycache__/
 # Frontend
 node_modules/
 frontend/dist/
+frontend/tsconfig.tsbuildinfo
+
+# Data directory (root-level Docker volume mount)
+data/
+
+# uv lock
+backend/uv.lock

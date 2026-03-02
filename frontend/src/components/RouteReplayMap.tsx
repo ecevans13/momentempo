@@ -54,9 +54,11 @@ export default function RouteReplayMap({ points, totalDistance, totalTime }: Rou
     cumulativeDistances.current = dists;
   }
 
-  const currentDistance = cumulativeDistances.current[currentIndex] || 0;
-  const distanceRatio = totalDistance > 0 ? currentDistance / cumulativeDistances.current[points.length - 1] : 0;
-  const currentElapsed = totalTime * distanceRatio;
+  const polylineTotalDist = cumulativeDistances.current[points.length - 1] || 1;
+  const currentPolylineDist = cumulativeDistances.current[currentIndex] || 0;
+  const progressRatio = currentPolylineDist / polylineTotalDist;
+  const currentDistance = totalDistance * progressRatio;
+  const currentElapsed = totalTime * progressRatio;
 
   const animate = useCallback(
     (timestamp: number) => {
@@ -190,11 +192,11 @@ export default function RouteReplayMap({ points, totalDistance, totalTime }: Rou
 
       {/* Stats overlay */}
       <div className="flex gap-4 text-xs text-gray-500">
-        <span>{formatDistance(currentDistance * distanceRatio > 0 ? totalDistance * distanceRatio : 0)}</span>
+        <span>{formatDistance(currentDistance)}</span>
         <span>{formatDuration(Math.round(currentElapsed))}</span>
-        {currentElapsed > 0 && currentDistance > 0 && (
+        {currentDistance > 100 && currentElapsed > 0 && (
           <span>
-            {formatDuration(Math.round(currentElapsed / (totalDistance * distanceRatio / 1000)))} /km
+            {formatDuration(Math.round(currentElapsed / (currentDistance / 1000)))} /km
           </span>
         )}
       </div>
