@@ -1,470 +1,221 @@
-# Architecture Patterns: Strava Personal Fitness Dashboard
+# Architecture Research — v2.0 Enhanced Features
 
-**Domain:** Strava-integrated personal fitness dashboard
-**Researched:** 2026-02-27
-**Overall confidence:** MEDIUM (Strava API and OAuth patterns are stable and well-documented; specific library choices evolve but core architecture is proven)
+**Domain:** Adding GPS streams, best efforts history, and training projector to existing StravaViz
+**Researched:** 2026-03-04
+**Confidence:** HIGH
 
----
-
-## Recommended Architecture
-
-A layered, service-oriented architecture with a Python backend acting as a Strava API proxy and data cache, and a JavaScript SPA frontend. The backend owns all Strava communication, token management, and caching. The frontend is a dumb consumer of a clean internal REST/JSON API.
+## Existing Architecture (v1)
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    Browser (SPA)                    │
-│   React + Vite | Charting | Mapping | Dark theme    │
-└────────────────────────┬────────────────────────────┘
-                         │ HTTP/JSON (internal API)
-┌────────────────────────▼────────────────────────────┐
-│               Python Backend (FastAPI)               │
-│                                                     │
-│  ┌─────────────┐  ┌──────────────┐  ┌───────────┐  │
-│  │   API Layer  │  │ Service Layer│  │ Data Layer│  │
-│  │  (routes)   │  │ (business    │  │ (SQLite + │  │
-│  │             │  │  logic)      │  │  cache)   │  │
-│  └──────┬──────┘  └──────┬───────┘  └─────┬─────┘  │
-│         └────────────────┴────────────────┘         │
-└────────────────────────┬────────────────────────────┘
-                         │ OAuth2 + HTTP
-┌────────────────────────▼────────────────────────────┐
-│                  Strava API                         │
-│  /athlete  /activities  /gear  /segments  /routes   │
-└─────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  React SPA (TypeScript + Vite)                              │
+│  ActivityDetail → RouteReplayMap (Leaflet)                  │
+│  ActivityDetail → ElevationProfile (Recharts, splits-based) │
+│  InsightsView → FitnessChart (CTL/ATL/TSB)                  │
+│  InsightsView → RacePredictor (VDOT + race predictions)     │
+│  InsightsView → TrainingHeatmap (52-week grid)              │
+├────────────────────────────────────────────────────────────┤
+│  FastAPI Backend                                            │
+│  /api/activities/{id}     → activity_detail router          │
+│  /api/activities/{id}/zones → activity_detail router        │
+│  /api/insights/fitness    → insights router (CTL/ATL)       │
+│  /api/insights/race-predictions → insights router (VDOT)   │
+│  /api/insights/heatmap    → insights router                 │
+├────────────────────────────────────────────────────────────┤
+│  SQLite (via SQLModel)                                      │
+│  Activity, Split, BestEffort, SyncState, TokenData, Gear   │
+└────────────────────────────────────────────────────────────┘
 ```
 
----
+## v2 Architecture Changes
 
-## Component Boundaries
-
-| Component | Responsibility | Communicates With |
-|-----------|---------------|-------------------|
-| **SPA (React)** | Renders UI, charts, maps, handles user interactions, time-range filtering, theme switching | Backend API only — never touches Strava directly |
-| **Backend API Layer (FastAPI routes)** | Exposes JSON endpoints, handles request validation, coordinates service calls | SPA (consumer), Service Layer (producer) |
-| **Strava Auth Service** | Manages OAuth flow, stores tokens, handles refresh automatically before expiry | Strava OAuth endpoints, Token Store |
-| **Strava Client Service** | Wraps all Strava API calls, enforces rate limiting, deduplicates requests | Strava REST API, Cache Layer |
-| **Activity Service** | Transforms raw Strava data into app-shaped models, computes derived metrics (zones, pace, trends) | Strava Client, Database |
-| **Gear Service** | Fetches gear metadata from Strava, coordinates image search via product name | Strava Client, Image Search API (optional), Database |
-| **Trophy/Achievement Service** | Aggregates Strava PRs + segment efforts + custom milestones | Activity Service, Database |
-| **Projection Engine** | Computes VO2max/pace/zone projections from training plan inputs | Activity Service (historical data) |
-| **Cache/Data Layer (SQLite)** | Persists fetched activities, tokens, computed metrics; reduces Strava API calls | All services |
-| **Deployment Host** | Serves the built SPA as static files, runs the FastAPI app | Browser (static), Strava (OAuth callback) |
-
-**Confidence:** HIGH — this layered pattern is standard for any OAuth-integrated dashboard.
-
----
-
-## Strava OAuth Flow
-
-Strava uses OAuth 2.0 with short-lived access tokens (6 hours) and long-lived refresh tokens.
+### New: ActivityStream model + streams endpoint
 
 ```
-1. First-run setup (one time, developer-side):
-   Browser → GET /auth/strava
-   Backend → redirect to Strava authorization URL
-   Strava  → redirect to /auth/callback?code=XXX
-   Backend → exchange code for {access_token, refresh_token, expires_at}
-   Backend → persist tokens to SQLite (encrypted or env-var protected)
+SQLite
+  └── ActivityStream (new table)
+        activity_id  INTEGER FK
+        stream_data  TEXT (JSON blob: {latlng, altitude, heartrate, velocity_smooth})
+        fetched_at   DATETIME
 
-2. Subsequent API calls (automatic, transparent):
-   SPA     → GET /api/activities
-   Backend → check token expires_at
-           → if expired: POST strava.com/oauth/token (refresh_token grant)
-                         → store new access_token + expires_at
-           → use access_token to call Strava API
-           → return transformed data to SPA
+FastAPI
+  └── /api/activities/{id}/streams  (new endpoint)
+        1. Check SQLite cache → return if exists
+        2. Fetch from Strava GET /activities/{id}/streams
+        3. Persist to ActivityStream table
+        4. Return to frontend
+
+Frontend
+  └── ActivityDetail
+        ├── PaceHROverlayMap (new component, replaces plain RouteReplayMap for overlay)
+        │     Receives: latlng[], values[], overlay_type (pace|hr)
+        │     Renders: N colored <Polyline> segments via react-leaflet
+        └── ElevationProfileGPS (enhanced component)
+              Receives: latlng[], altitude[]
+              Renders: smooth area chart using GPS altitude (not splits)
 ```
 
-Key insight: For a single-user app, you do the OAuth dance once, store the refresh token, and never need to show OAuth UI again. The backend silently refreshes before every API call when needed.
+### New: Best Efforts Progression Timeline
 
-**Scopes required:**
-- `activity:read_all` — full activity list including private
-- `profile:read_all` — athlete stats
-- `read` — gear, segments
+```
+SQLite
+  └── BestEffort (existing table, already populated)
+        activity_id, distance_meters, elapsed_time, start_date
 
-**Confidence:** HIGH — Strava OAuth docs are stable and well-established.
+FastAPI
+  └── /api/insights/best-efforts-history  (new endpoint)
+        Query: for each standard distance, find best effort per month
+        Return: { distance_name, history: [{month, best_seconds}] }
 
----
+Frontend
+  └── InsightsView
+        └── BestEffortsTimeline (new component)
+              Renders: multi-line Recharts LineChart
+              X-axis: date (monthly), Y-axis: time (inverted — faster = higher)
+              One line per standard distance (1mi, 5K, 10K, half, marathon)
+              Only show lines where user has ≥2 data points
+```
+
+### New: Workout Projector
+
+```
+FastAPI
+  └── /api/projector/preview  (new POST endpoint)
+        Input: { weeks: number, weekly_km: number, intensity: "easy"|"moderate"|"hard" }
+        Logic:
+          1. Fetch current CTL/ATL from last computed day
+          2. Convert plan to estimated daily TSS (km × intensity_factor)
+          3. Run CTL/ATL EWA forward N×7 days
+          4. Return: { historical: [...], projected: [{date, ctl, atl, tsb}] }
+
+Frontend
+  └── InsightsView
+        └── WorkoutProjector (new component)
+              Input form: weeks (4/8/12/16), weekly distance, intensity level
+              Chart: extends FitnessChart with projected curve overlay
+              Visual distinction: dashed lines for projected, solid for historical
+              Framing: "Estimated projection, not a guarantee"
+```
+
+## Component Responsibilities
+
+| Component | Responsibility | Typical Implementation |
+|-----------|----------------|------------------------|
+| ActivityStream (model) | Cache GPS stream data per activity | SQLModel table, JSON text column |
+| streams router (backend) | Fetch/cache/serve streams | FastAPI router with lazy Strava fetch |
+| PaceHROverlayMap | Render colored polyline segments | react-leaflet Polyline array |
+| ElevationProfileGPS | GPS-accurate elevation area chart | Recharts AreaChart with altitude[] data |
+| BestEffortsTimeline | PR progression over time | Recharts LineChart, multi-series |
+| WorkoutProjector | Plan input + CTL/ATL projection | Form + extended FitnessChart |
+
+## Recommended Project Structure Changes
+
+```
+backend/app/
+├── models.py          # Add ActivityStream model
+├── routers/
+│   ├── activity_detail.py   # Add /streams endpoint
+│   ├── insights.py          # Add /best-efforts-history endpoint
+│   └── projector.py         # New file: workout projector endpoint
+└── services/
+    └── strava_client.py     # Add fetch_activity_streams() method
+
+frontend/src/
+├── components/
+│   ├── PaceHROverlayMap.tsx      # New: colored polyline map
+│   ├── ElevationProfileGPS.tsx   # New (or replace ElevationProfile.tsx)
+│   ├── BestEffortsTimeline.tsx   # New
+│   └── WorkoutProjector.tsx      # New
+├── api/
+│   ├── client.ts      # Add fetchActivityStreams(), fetchBestEffortsHistory(), postProjection()
+│   └── types.ts       # Add ActivityStreams, BestEffortsHistory, ProjectionResult types
+└── views/
+    └── InsightsView.tsx    # Add BestEffortsTimeline, WorkoutProjector sections
+```
 
 ## Data Flow
 
-### Page Load / Sync Flow
-
+### Streams flow (lazy, cached)
 ```
-Browser opens dashboard
-  └─→ SPA mounts → calls GET /api/sync
-        └─→ Backend: check last sync timestamp
-              ├─ If < 15 min ago: skip API call, return cached data
-              └─ If stale: call Strava /athlete/activities?after={last_sync}
-                    └─→ Store new activities in SQLite
-                    └─→ Return {synced: N, total: M}
-  └─→ SPA calls GET /api/dashboard?range=90d
-        └─→ Backend queries SQLite, computes aggregates
-        └─→ Returns JSON: {stats, trend_data, recent_activities}
-  └─→ SPA renders charts/metrics from JSON
-```
-
-### Activity Drill-Down Flow
-
-```
-User clicks activity card
-  └─→ SPA calls GET /api/activities/{id}
-        └─→ Backend: check SQLite cache for full activity detail
-              ├─ Hit: return stored data
-              └─ Miss: call Strava GET /activities/{id}?include_all_efforts=true
-                    └─→ Store in SQLite
-                    └─→ Return: {laps, streams, segment_efforts, map.polyline}
-  └─→ SPA decodes polyline → renders Leaflet/MapLibre map
-  └─→ SPA renders pace/HR chart from streams data
+User opens ActivityDetail
+    ↓
+ActivityDetail mounts → calls fetchActivityStreams(id)
+    ↓
+Backend: check ActivityStream table → if cached, return
+    ↓ (cache miss)
+Backend: GET /activities/{id}/streams from Strava → store in SQLite
+    ↓
+Frontend receives streams → passes latlng+values to PaceHROverlayMap
+    ↓
+PaceHROverlayMap: compute color per segment → render N Polyline elements
 ```
 
-### Gear Gallery Flow
-
+### Projector flow
 ```
-SPA calls GET /api/gear
-  └─→ Backend fetches athlete.shoes + athlete.bikes from Strava
-  └─→ For each gear item:
-        ├─ Check SQLite for cached image URL
-        └─ If missing: search product name via image API (Brave Search / Google Custom Search)
-              └─→ Store image URL in SQLite
-  └─→ Return gear list with image URLs
-```
-
-### Workout Projection Flow (client-side compute)
-
-```
-User enters training plan parameters
-  └─→ SPA calls GET /api/athlete/stats (historical HR zones, VO2max baseline)
-  └─→ SPA runs projection algorithm client-side (or via POST /api/project)
-        ├─ Input: {weeks, runs_per_week, intensity_distribution}
-        ├─ Baseline: {current_vo2max, avg_hr, training_load}
-        └─ Output: {projected_pace, projected_zones, delta_metrics}
-  └─→ SPA renders projection chart
+User fills WorkoutProjector form → submits
+    ↓
+POST /api/projector/preview {weeks, weekly_km, intensity}
+    ↓
+Backend: fetch last CTL/ATL value from insights service
+    ↓
+Backend: project forward N weeks using EWA formula
+    ↓
+Return combined historical + projected arrays
+    ↓
+Frontend: render FitnessChart extended with dashed projected lines
 ```
 
-**Confidence:** HIGH for OAuth/sync patterns. MEDIUM for projection engine (algorithm design is project-specific).
+## Architectural Patterns
 
----
+### Pattern 1: Lazy stream fetch with SQLite cache
 
-## Patterns to Follow
+**What:** Fetch Strava streams only on first detail view; cache in SQLite; serve from cache on repeat
+**When to use:** Any Strava data that is expensive to fetch but rarely changes
+**Trade-offs:** Slight latency on first open per activity; subsequent opens are instant
 
-### Pattern 1: Backend-as-Strava-Proxy
+### Pattern 2: Colored polyline via N Polyline elements
 
-**What:** All Strava API calls go through the backend. The SPA never calls strava.com directly.
+**What:** Divide GPS track into N segments; assign color based on pace/HR value at each segment
+**When to use:** Pace or HR overlay on Leaflet map
+**Trade-offs:** 50-200 DOM elements per map; acceptable for a single activity view (not a list)
 
-**Why:** Keeps tokens server-side (never exposed to browser), enables caching at the API layer, centralizes rate limit enforcement, makes the SPA easily portable.
-
-**Implementation:**
-```python
-# backend/services/strava_client.py
-class StravaClient:
-    def __init__(self, token_store: TokenStore):
-        self.token_store = token_store
-
-    def _get_headers(self) -> dict:
-        token = self.token_store.get_valid_token()  # auto-refreshes
-        return {"Authorization": f"Bearer {token}"}
-
-    def get_activities(self, after: int | None = None) -> list[dict]:
-        params = {"per_page": 200}
-        if after:
-            params["after"] = after
-        resp = httpx.get(
-            "https://www.strava.com/api/v3/athlete/activities",
-            headers=self._get_headers(),
-            params=params,
-        )
-        resp.raise_for_status()
-        return resp.json()
+**Example:**
+```typescript
+const segments = buildColoredSegments(latlng, values, colorScale);
+return segments.map((seg, i) => (
+  <Polyline key={i} positions={seg.positions} color={seg.color} weight={4} opacity={0.85} />
+));
 ```
 
-### Pattern 2: Incremental Sync with Watermark
+### Pattern 3: Extend existing chart rather than replace
 
-**What:** Track last sync timestamp. Only fetch activities newer than that timestamp.
+**What:** WorkoutProjector reuses FitnessChart's Recharts setup; adds dashed projected series
+**When to use:** When a new feature is a logical extension of an existing visualization
+**Trade-offs:** Tighter coupling between Projector and FitnessChart; easier to maintain visual consistency
 
-**Why:** Strava rate limits are 100 req/15min, 1000/day. Fetching full history on every page load would exhaust limits quickly. Incremental sync keeps daily usage low.
+## Integration Points
 
-**Implementation:**
-```python
-# On sync:
-last_sync = db.get_setting("last_sync_at")
-new_activities = strava.get_activities(after=last_sync)
-db.upsert_activities(new_activities)
-db.set_setting("last_sync_at", now())
-```
+### External Services
 
-### Pattern 3: SQLite as Local Data Warehouse
+| Service | Integration Pattern | Notes |
+|---------|---------------------|-------|
+| Strava Streams API | httpx GET in strava_client.py, lazy + cached | Same auth pattern as existing API calls; count against rate limits |
 
-**What:** Store all fetched activity data in SQLite. All dashboard queries hit SQLite, not Strava.
+### Internal Boundaries
 
-**Why:** SQLite is fast, zero-infrastructure, perfect for single-user apps. Enables complex aggregations (trend queries, zone breakdowns) without repeated API calls. Also means the dashboard works offline after first sync.
-
-**Schema sketch:**
-```sql
-activities (id, athlete_id, name, type, start_date, distance,
-            moving_time, elapsed_time, total_elevation_gain,
-            average_speed, max_speed, average_heartrate,
-            max_heartrate, suffer_score, map_polyline, raw_json)
-
-activity_streams (activity_id, stream_type, data_json)
-
-gear (id, name, brand_name, model_name, distance, image_url)
-
-tokens (id, access_token, refresh_token, expires_at, scope)
-
-sync_state (key, value)  -- last_sync_at, total_synced, etc.
-```
-
-### Pattern 4: Polyline Decode in Frontend
-
-**What:** Strava returns route as encoded Google Polyline string. Decode in frontend, render with Leaflet or MapLibre GL.
-
-**Why:** Polylines are compact (small JSON payload). Decoding is cheap client-side. Map rendering needs to happen in browser anyway.
-
-**Libraries:**
-- `@mapbox/polyline` (decode)
-- `leaflet` or `maplibre-gl` (render)
-- `react-leaflet` (React wrapper for Leaflet)
-
-### Pattern 5: Streaming Data for Charts
-
-**What:** For activity drill-downs, store the raw Strava streams (time, distance, heartrate, velocity_smooth, altitude) in SQLite as JSON blobs. Transform to chart-ready format on read.
-
-**Why:** Strava streams are paginated and expensive to re-fetch. Storing them once allows rich chart interactivity without re-hitting the API.
-
----
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1: Calling Strava from the Browser
-
-**What:** Making `fetch("https://www.strava.com/api/v3/...")` from React code.
-
-**Why bad:** Exposes your access token in the browser (visible in devtools). Tokens can be stolen. Also ties you to CORS limitations and makes caching impossible.
-
-**Instead:** Always proxy through your backend. Never ship tokens to the client.
-
-### Anti-Pattern 2: Fetching Full History on Every Page Load
-
-**What:** Calling `/athlete/activities` for all activities on every visit.
-
-**Why bad:** Blows through Strava's 100 req/15min rate limit instantly for users with 500+ activities. Also makes the app unusably slow.
-
-**Instead:** Incremental sync with watermark timestamp. Full history fetch only on first run (paginated, with delay between pages).
-
-### Anti-Pattern 3: Storing Tokens in Environment Variables Only
-
-**What:** Hardcoding access_token in `.env`, relying on never rotating it.
-
-**Why bad:** Strava access tokens expire in 6 hours. The app breaks after expiry. Refresh tokens also expire if unused for 6 months.
-
-**Instead:** Store refresh_token in SQLite (or encrypted file). Auto-refresh before each API call using the refresh token grant.
-
-### Anti-Pattern 4: Computing Aggregates in Python on Every Request
-
-**What:** Loading all 1000 activities into Python lists and computing trends with loops.
-
-**Why bad:** Slow for large datasets. SQLite can do aggregations much faster in the DB layer.
-
-**Instead:** Use SQL window functions and GROUP BY for trend queries. Only load aggregated data into Python.
-
-### Anti-Pattern 5: Monolith Route File
-
-**What:** One massive `routes.py` with all 30 endpoints.
-
-**Why bad:** Hard to navigate, test, and maintain as the dashboard grows.
-
-**Instead:** Organize by domain: `routes/activities.py`, `routes/gear.py`, `routes/athlete.py`, `routes/auth.py`. Use FastAPI `APIRouter` to compose them.
-
----
-
-## Suggested Directory Structure
-
-```
-stravaviz/
-├── backend/
-│   ├── main.py                 # FastAPI app creation, router mounting
-│   ├── config.py               # Settings (env vars, rate limits)
-│   ├── database.py             # SQLite setup, migrations
-│   ├── routes/
-│   │   ├── auth.py             # OAuth flow endpoints
-│   │   ├── activities.py       # Activity list, drill-down
-│   │   ├── athlete.py          # Stats, zones, sync
-│   │   ├── gear.py             # Gear gallery
-│   │   └── projections.py      # Workout projector
-│   ├── services/
-│   │   ├── strava_client.py    # Strava API wrapper + rate limiting
-│   │   ├── token_store.py      # Token persistence + auto-refresh
-│   │   ├── activity_service.py # Transform + compute
-│   │   ├── gear_service.py     # Gear + image fetching
-│   │   └── projection.py       # Training projection algorithms
-│   └── models/
-│       ├── activity.py         # Pydantic models
-│       └── athlete.py
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Dashboard/
-│   │   │   ├── ActivityDetail/
-│   │   │   ├── GearGallery/
-│   │   │   ├── TrophyCase/
-│   │   │   └── Projector/
-│   │   ├── api/                # Typed API client (fetch wrappers)
-│   │   ├── hooks/              # React Query hooks
-│   │   └── utils/
-│   │       └── polyline.ts     # Route decoding
-│   ├── index.html
-│   └── vite.config.ts
-├── pyproject.toml
-├── .env.example                # STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET
-└── .gitignore
-```
-
----
-
-## Build Order (Phase Dependencies)
-
-Components must be built in dependency order. Later components depend on earlier ones being functional.
-
-```
-Phase 1: Foundation
-  └─→ Project scaffolding (pyproject.toml, .gitignore, env setup)
-  └─→ SQLite schema + migrations
-  └─→ FastAPI app skeleton (main.py, health check)
-
-Phase 2: Strava Auth (UNBLOCKS EVERYTHING)
-  └─→ OAuth flow endpoints (/auth/strava, /auth/callback)
-  └─→ Token store (persist refresh_token to SQLite)
-  └─→ Auto-refresh middleware
-  └─→ Strava client wrapper
-  [Nothing else can be built until this works]
-
-Phase 3: Data Pipeline
-  └─→ Incremental sync endpoint (/api/sync)
-  └─→ Initial full-history backfill (paginated)
-  └─→ Activity storage in SQLite (basic fields)
-  └─→ Activity streams storage (for drill-downs)
-  [Dashboard can't show real data until this works]
-
-Phase 4: Backend API Layer
-  └─→ Activity list endpoint (with filtering, pagination)
-  └─→ Activity detail endpoint (with streams)
-  └─→ Athlete stats endpoint
-  └─→ Trend aggregation queries (SQL)
-  └─→ Gear endpoint
-  └─→ Trophy/achievement endpoint
-
-Phase 5: Frontend Foundation
-  └─→ Vite + React setup
-  └─→ Dark theme + component library baseline
-  └─→ API client layer (typed fetch wrappers)
-  └─→ React Query setup for caching/loading states
-
-Phase 6: Dashboard UI
-  └─→ Key metrics cards (this week, this month, all time)
-  └─→ Trend charts (Chart.js or Recharts)
-  └─→ Time-range selector (weekly → multi-year)
-  └─→ Activity list/feed
-
-Phase 7: Activity Drill-Down
-  └─→ Route map (Leaflet + polyline decode)
-  └─→ Pace/HR chart with segment overlays
-  └─→ HR zone breakdown
-  └─→ Splits table
-
-Phase 8: Gear Gallery
-  └─→ Gear cards from Strava data
-  └─→ Image search integration
-  └─→ Usage stats per gear item
-
-Phase 9: Trophy Case
-  └─→ Strava PRs and segment trophies
-  └─→ Custom milestone definitions
-  └─→ Achievement timeline
-
-Phase 10: Workout Projector
-  └─→ Training plan input UI
-  └─→ Projection algorithm (VO2max, pace, zones)
-  └─→ Projection chart
-
-Phase 11: Deployment
-  └─→ Build pipeline (Vite static + FastAPI)
-  └─→ Deploy to Vercel/Render/Fly.io
-```
-
-**Critical dependency:** Phase 2 (Auth) is the single biggest blocker. No data = no dashboard. Plan extra time here.
-
----
-
-## Scalability Considerations
-
-This is a single-user personal dashboard. Scalability is not the primary concern. However:
-
-| Concern | Single user (this project) | If multi-user later |
-|---------|---------------------------|---------------------|
-| Data volume | SQLite handles 10K activities fine | Migrate to PostgreSQL |
-| Token management | One token set in SQLite | Per-user token table |
-| API rate limits | 1000 req/day is plenty | Need per-user quota tracking |
-| Sync strategy | On page load is fine | Need webhooks or background jobs |
-| Deployment | Static SPA + single Python process | Need horizontal scaling |
-
----
-
-## Strava API Key Endpoints
-
-(Based on Strava API v3 documentation — confidence HIGH, stable since 2018)
-
-| Endpoint | Data | Notes |
-|----------|------|-------|
-| `GET /athlete` | Profile, stats summary | Includes gear list |
-| `GET /athlete/activities` | Activity list (paginated) | Max 200/page, use `after`/`before` for incremental |
-| `GET /activities/{id}` | Full activity detail | Include `?include_all_efforts=true` for segments |
-| `GET /activities/{id}/streams` | Time-series data (HR, pace, GPS) | Request specific stream types |
-| `GET /gear/{id}` | Gear detail (brand, model, distance) | Referenced from athlete endpoint |
-| `GET /athlete/zones` | HR zones | Requires premium subscription |
-| `GET /segments/{id}/leaderboard` | Segment times | Rate-limited heavily |
-
-**Rate limits:** 100 requests per 15 minutes, 1000 per day (daily limit is the binding constraint for initial full-history sync).
-
-**Pagination strategy for full history:** `GET /athlete/activities?per_page=200&page=N` — most users have <1000 activities so 5 pages maximum. After initial load, incremental sync needs 1 request per sync.
-
----
-
-## Deployment Architecture
-
-For Vercel/Netlify + Python backend:
-
-```
-Option A: Split deployment (recommended for simplicity)
-  Frontend: Vercel (static SPA, free tier)
-  Backend:  Render or Fly.io (Python, free/cheap tier)
-  Database: SQLite file on persistent volume (Render) or included in backend
-
-Option B: Unified (more complex)
-  Vercel serverless functions for API routes
-  [Problem: SQLite doesn't work well with serverless — no persistent filesystem]
-
-Option C: VPS (simplest long-term)
-  Single DigitalOcean/Hetzner droplet
-  Nginx serves built SPA as static
-  Gunicorn/uvicorn runs FastAPI
-  SQLite file on local disk
-```
-
-**Recommendation:** Option A (Vercel for frontend, Render for backend) for v1. Free tiers cover a personal project. SQLite on Render's persistent disk. If Render's free tier sleeps the backend, upgrade to a paid tier ($7/month).
-
-**Confidence:** MEDIUM — hosting landscape changes. Verify current Render/Fly.io free tier terms at deployment time.
-
----
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| ActivityDetail ↔ streams endpoint | REST GET | Cache miss triggers Strava fetch |
+| WorkoutProjector ↔ projector endpoint | REST POST | Stateless: each projection request is self-contained |
+| BestEffortsTimeline ↔ insights endpoint | REST GET | Read-only query on existing BestEffort data |
 
 ## Sources
 
-- Strava API v3 Documentation (stable since 2018, OAuth patterns well-established) — HIGH confidence
-- FastAPI official documentation patterns (APIRouter, dependency injection for services) — HIGH confidence
-- SQLite use in single-user web apps — well-established pattern — HIGH confidence
-- Deployment architecture (Vercel + Render split) — MEDIUM confidence, verify current free tier limits
-- Workout projection algorithm — LOW confidence, project-specific design needed, no standard implementation
+- Existing StravaViz v1 codebase — component structure confirmed by reading source
+- Strava API docs — streams endpoint shape, rate limits
+- react-leaflet Polyline API — positions, color, weight props
+- Training Peaks PMC — CTL/ATL EWA formula
 
 ---
-
-*Architecture research: 2026-02-27*
+*Architecture research for: StravaViz v2.0*
+*Researched: 2026-03-04*

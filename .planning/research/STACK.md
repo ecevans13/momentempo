@@ -1,8 +1,12 @@
-# Stack Research
+# Stack Research — v2.0 Enhanced Features
 
-**Domain:** Personal Fitness Dashboard (Strava API Integration)
-**Researched:** 2026-02-27
-**Confidence:** HIGH — All core technologies are mainstream, well-documented, and verified against current releases.
+**Domain:** Fitness dashboard — Strava Streams API, pace/HR map overlay, training projector
+**Researched:** 2026-03-04
+**Confidence:** HIGH
+
+## Context: What's Already Installed
+
+The existing stack (react-leaflet 4.x, Leaflet 1.9.x, Recharts 2.x, FastAPI 0.115+, SQLModel, httpx) covers most of v2. No major library additions are needed.
 
 ## Recommended Stack
 
@@ -10,115 +14,92 @@
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| Python | 3.13.7 | Runtime | Already configured; latest stable with performance improvements |
-| FastAPI | ~0.133 | Backend API framework | Async by default, auto-generated docs, Pydantic validation, top Python framework for APIs |
-| React | 19 | Frontend UI framework | Dominant ecosystem, server components, hooks, massive library support |
-| Vite | 6.x | Frontend build tool | Fast HMR, native ESM, React plugin, replaces Create React App |
-| SQLite | 3.x | Local data store | Zero-config, perfect for single-user apps, fast aggregation queries, ships with Python |
-| uv | 0.8.17 | Python package manager | Already configured; fastest Python package manager, handles virtualenvs |
+| react-leaflet | 4.x (installed) | Pace/HR polyline overlay | Multiple `<Polyline>` segments per color bucket — no new library needed |
+| Recharts | 2.x (installed) | Best efforts timeline, elevation profile from GPS | Already used everywhere; consistent look |
+| FastAPI | 0.115+ (installed) | New `/streams` and `/projector` endpoints | Add alongside existing routers |
+| httpx | 0.27+ (installed) | Strava Streams API fetch | Already used in strava_client.py |
 
 ### Supporting Libraries
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| stravalib | 2.3 | Strava API client | All Strava API interactions — handles OAuth, pagination, rate limits |
-| Plotly.js | 6.5 | Interactive charts | Trend visualizations, zone charts, metric dashboards — rich interactivity |
-| Leaflet | 1.9.4 | Route maps | Activity route display with polyline overlays |
-| react-leaflet | 5.x | React + Leaflet binding | Declarative map components in React |
-| Recharts | 2.x | Lightweight charts | Simple metrics display where Plotly is overkill (sparklines, small charts) |
-| TailwindCSS | 4.x | Utility-first CSS | Rapid UI styling, dark mode support built-in, modern aesthetic |
-| Pydantic | 2.x | Data validation | FastAPI models, Strava data parsing, config management |
-| HTTPX | 0.28+ | Async HTTP client | Backend requests to image APIs, async Strava calls if bypassing stravalib |
-| APScheduler | 3.x | Background tasks | Optional: scheduled data sync alternative to page-load sync |
+| (none new required) | — | — | All v2 features fit existing stack |
 
-### Development Tools
+### Optional: numpy
 
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| Ruff | Python linting + formatting | Replaces flake8 + black + isort; extremely fast |
-| Pytest | Python testing | Standard Python test framework |
-| ESLint + Prettier | JS/TS linting + formatting | Standard frontend tooling |
-| TypeScript | Type-safe frontend | Catches errors at compile time, better DX with React |
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| numpy | ≥1.26 | Vectorized CTL/ATL projection math | Only worth adding if projector has performance issues; plain Python lists are fine for ≤52 weeks |
 
 ## Installation
 
 ```bash
-# Backend (Python with uv)
-uv add fastapi uvicorn stravalib pydantic httpx aiosqlite
+# No new frontend packages needed
+# No new backend packages needed for core features
 
-# Backend dev dependencies
-uv add --dev pytest ruff
-
-# Frontend (Node.js)
-npm create vite@latest frontend -- --template react-ts
-cd frontend
-npm install plotly.js react-plotly.js leaflet react-leaflet recharts
-npm install -D tailwindcss @types/leaflet typescript eslint prettier
+# Optional — only if projector math is slow at scale:
+cd backend && uv add numpy
 ```
 
 ## Alternatives Considered
 
 | Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| FastAPI | Flask | If you want simpler sync-only code; but FastAPI is better for API-first apps |
-| FastAPI | Django | If you needed ORM, admin panel, auth system — overkill for single-user dashboard |
-| React | Svelte/SvelteKit | If bundle size is critical or you prefer less boilerplate; smaller ecosystem |
-| React | Next.js | If you needed SSR/SSG; adds complexity unnecessary for personal dashboard |
-| SQLite | PostgreSQL | If multi-user or concurrent writes needed; overkill for single-user |
-| Plotly | Chart.js | If you want lighter weight charts; Plotly has better interactivity for drill-downs |
-| Plotly | D3.js | If you need fully custom visualizations; much steeper learning curve |
-| Leaflet | Mapbox GL JS | If you want vector tiles and 3D terrain; requires API key and has usage costs |
-| TailwindCSS | CSS Modules | If you prefer scoped CSS without utility classes; Tailwind is faster for prototyping |
+|-------------|-------------|------------------------|
+| Multiple `<Polyline>` segments (react-leaflet) | Leaflet.hotline | hotline is unmaintained (last release 2018), no TypeScript types — DIY segments are safer |
+| Multiple `<Polyline>` segments | MapLibre GL JS | Use MapLibre only if smooth gradient lines are required; requires swapping the entire map library |
+| Plain Python CTL/ATL projection | scikit-learn | Overkill — CTL/ATL is just exponential weighted moving average with fixed constants (42-day, 7-day); no ML needed |
 
 ## What NOT to Use
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| Dash (Plotly) | Monolithic Python-rendered UI; poor for SPA experience and custom interactions | FastAPI + React + Plotly.js |
-| Streamlit | Prototyping tool, not production web apps; limited customization and routing | FastAPI + React |
-| Flask | No async support, no auto-validation, no auto-docs; FastAPI does everything Flask does plus more | FastAPI |
-| Create React App | Deprecated, slow builds, no longer maintained | Vite |
-| Matplotlib for web | Server-side rendering, no interactivity, poor web integration | Plotly.js or Recharts |
-| requests (Python) | Sync only; blocks event loop in FastAPI | HTTPX (async capable) |
-| raw Strava API calls | Reinventing OAuth, pagination, model parsing | stravalib |
+| Leaflet.hotline | Unmaintained, no TS types, breaks with Leaflet 1.9 | N colored `<Polyline>` elements via react-leaflet |
+| Mapbox GL JS | Requires API key + paid tier for production traffic | Stick with Leaflet (already installed, free) |
+| D3 for color scale | Adds 80KB dependency for 5 lines of interpolation | Inline linear RGB interpolation function |
+| Strava official SDK | No maintained JS/Python SDK from Strava | Use existing `strava_client.py` httpx pattern |
 
-## Stack Patterns
+## Strava Streams API — Key Details
 
-**For dark mode:**
-- TailwindCSS `dark:` variant with CSS custom properties
-- Store preference in localStorage, respect system preference as default
-- Apply `class="dark"` on `<html>` element
+The streams endpoint is the core new dependency for v2:
 
-**For Strava data caching:**
-- SQLite with `aiosqlite` for async access from FastAPI
-- Store raw activity JSON + parsed fields in separate tables
-- Watermark-based incremental sync (only fetch activities after last sync timestamp)
+```
+GET /activities/{id}/streams?keys=latlng,altitude,heartrate,velocity_smooth&key_by_type=true
+```
 
-**For deployment:**
-- Backend: Render.com or Railway (native Python support, free tier)
-- Frontend: Vercel or Netlify (optimized for React/Vite, free tier)
-- Alternative: Single Render service serving both backend API and static frontend
+- Returns arrays of equal length: one value per GPS sample point
+- `latlng`: array of [lat, lng] pairs — raw GPS track
+- `altitude`: array of meters above sea level per point — replaces splits-based elevation
+- `heartrate`: array of bpm per point (only present if activity has HR data)
+- `velocity_smooth`: array of m/s per point — convert to pace for overlay
+- Rate limit: 1 API call per activity detail load; cache aggressively in SQLite as JSON blob
+- Stream data is large (50-500KB per activity) — store compressed or as JSON text, not parsed rows
+
+## Workout Projector — Algorithm
+
+CTL/ATL/TSB is already implemented. The projector extends it forward:
+
+- **CTL** (Chronic Training Load / Fitness): 42-day EWA of daily TSS
+- **ATL** (Acute Training Load / Fatigue): 7-day EWA of daily TSS  
+- **TSB** (Training Stress Balance / Form): CTL − ATL
+- **TSS estimate from plan input**: distance × pace-based intensity factor, or simpler: minutes × zone multiplier
+- Projection: from today's CTL/ATL, run the EWA formula forward N days using plan-estimated daily TSS
+
+No new libraries needed — the math is a simple loop.
 
 ## Version Compatibility
 
 | Package A | Compatible With | Notes |
 |-----------|-----------------|-------|
-| FastAPI ~0.133 | Pydantic 2.x | Pydantic v1 support deprecated in FastAPI |
-| stravalib 2.3 | Pydantic 2.x | v2.0+ dropped Pydantic v1 support |
-| React 19 | Vite 6.x | Use @vitejs/plugin-react |
-| Plotly.js 6.5 | react-plotly.js 2.x | Verify react-plotly.js supports Plotly 6 |
-| Leaflet 1.9.4 | react-leaflet 5.x | react-leaflet 5 requires Leaflet 1.9+ |
-| TailwindCSS 4.x | Vite 6.x | Native Vite plugin in Tailwind v4 |
+| react-leaflet 4.x | React 18 | Already verified |
+| Recharts 2.x | React 18 | Already verified |
+| FastAPI 0.115 | Python 3.13 | Already verified |
 
 ## Sources
 
-- [FastAPI PyPI](https://pypi.org/project/fastapi/) — version 0.133.1, Feb 2026
-- [stravalib PyPI](https://pypi.org/project/stravalib/) — version 2.3, Mar 2025
-- [Plotly.js releases](https://github.com/plotly/dash/releases) — Plotly 6.5.2, Jan 2026
-- [Leaflet releases](https://github.com/leaflet/leaflet/releases) — version 1.9.4
-- [React docs](https://react.dev/) — React 19
-- [Vite](https://vite.dev/) — Vite 6.x
+- Strava API v3 docs — GET /activities/{id}/streams, key types, rate limits
+- react-leaflet docs — Polyline component props
+- Training Peaks PMC methodology — CTL/ATL/TSB constants (42-day, 7-day EWA)
 
 ---
-*Stack research for: Personal Fitness Dashboard (Strava API)*
-*Researched: 2026-02-27*
+*Stack research for: StravaViz v2.0 — GPS stream visualization & training projector*
+*Researched: 2026-03-04*
