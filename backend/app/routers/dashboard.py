@@ -1,0 +1,197 @@
+"""Dashboard endpoints: summary metrics, trends, and activity feed."""
+
+import logging
+import time
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Query, Request
+from sqlmodel import Session, col, func, select
+
+from ..models import Activity
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api", tags=["dashboard"])
+
+# Sport types considered "run-like" for pace calculations
+RUN_SPORT_TYPES = {"Run", "TrailRun", "VirtualRun", "Treadmill"}
+
+PERIOD_SECONDS = {
+    "week": 7 * 86400,
+    "month": 30 * 86400,
+    "year": 365 * 86400,
+}
+
+
+def _get_session(request: Request) -> Session:
+    return Session(request.app.state.engine)
+
+
+@router.get("/dashboard/summary")
+def dashboard_summary(
+    request: Request,
+    period: str = Query("month", pattern="^(week|month|year|all)$"),
+):
+    """Key metrics aggregated over a time period."""
+    with _get_session(request) as session:
+        stmt = select(Activity)
+        if period != "all":
+            cutoff = int(time.time() - PERIOD_SECONDS[period])
+            stmt = stmt.where(col(Activity.start_date_epoch) >= cutoff)
+
+        activities = session.exec(stmt).all()
+
+        total_distance = sum(a.distance for a in activities)
+        total_moving_time = sum(a.moving_time for a in activities)
+        total_elevation = sum(a.total_elevation_gain for a in activities)
+        count = len(activities)
+
+        # Pace: only for run-like activities with nonzero distance
+        run_activities = [
+            a for a in activities
+            if a.sport_type in RUN_SPORT_TYPES and a.distance > 0
+        ]
+        if run_activities:
+            run_time = sum(a.moving_time for a in run_activities)
+            run_dist = sum(a.distance for a in run_activities)
+            avg_pace = (run_time / run_dist) * 1000 if run_dist > 0 else None
+        else:
+            avg_pace = None
+
+        # Average heartrate across activities that have it
+        hr_values = [
+            a.average_heartrate for a in activities
+            if a.has_heartrate and a.average_heartrate is not None
+        ]
+        avg_hr = sum(hr_values) / len(hr_values) if hr_values else None
+
+        # Determine period_start
+        if period == "all":
+            period_start = None
+        else:
+            cutoff_epoch = int(time.time() - PERIOD_SECONDS[period])
+            period_start = datetime.fromtimestamp(cutoff_epoch, tz=timezone.utc).isoformat()
+
+    return {
+        "period": period,
+        "period_start": period_start,
+        "total_distance_m": total_distance,
+        "total_moving_time_s": total_moving_time,
+        "total_elevation_gain_m": total_elevation,
+        "activity_count": count,
+        "avg_pace_s_per_km": round(avg_pace, 1) if avg_pace is not None else None,
+        "avg_heartrate": round(avg_hr, 1) if avg_hr is not None else None,
+    }
+
+
+@router.get("/dashboard/trends")
+def dashboard_trends(
+    request: Request,
+    metric: str = Query("distance", pattern="^(distance|duration|pace|elevation|count)$"),
+    granularity: str = Query("weekly", pattern="^(weekly|monthly)$"),
+    months: int = Query(12, ge=1, le=60),
+    sport_type: str | None = Query(None),
+):
+    """Time-series data for trend charts."""
+    with _get_session(request) as session:
+        cutoff = int(time.time() - months * 30 * 86400)
+        stmt = select(Activity).where(col(Activity.start_date_epoch) >= cutoff)
+        if sport_type:
+            stmt = stmt.where(Activity.sport_type == sport_type)
+        activities = session.exec(stmt).all()
+
+    # Group activities by period bucket
+    buckets: dict[str, list[Activity]] = {}
+    for a in activities:
+        dt = datetime.fromtimestamp(a.start_date_epoch, tz=timezone.utc)
+        if granularity == "weekly":
+            key = dt.strftime("%G-W%V")
+        else:
+            key = dt.strftime("%Y-%m")
+        buckets.setdefault(key, []).append(a)
+
+    # Aggregate per bucket
+    data = []
+    for period_key in sorted(buckets.keys()):
+        group = buckets[period_key]
+        if metric == "distance":
+            value = sum(a.distance for a in group)
+        elif metric == "duration":
+            value = sum(a.moving_time for a in group)
+        elif metric == "elevation":
+            value = sum(a.total_elevation_gain for a in group)
+        elif metric == "count":
+            value = len(group)
+        elif metric == "pace":
+            runs = [a for a in group if a.sport_type in RUN_SPORT_TYPES and a.distance > 0]
+            if runs:
+                total_time = sum(a.moving_time for a in runs)
+                total_dist = sum(a.distance for a in runs)
+                value = (total_time / total_dist) * 1000 if total_dist > 0 else 0
+            else:
+                value = 0
+        else:
+            value = 0
+        data.append({"period": period_key, "value": round(value, 2)})
+
+    return {
+        "metric": metric,
+        "granularity": granularity,
+        "data": data,
+    }
+
+
+@router.get("/activities")
+def list_activities(
+    request: Request,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    sport_type: str | None = Query(None),
+):
+    """Paginated activity feed."""
+    with _get_session(request) as session:
+        base = select(Activity)
+        if sport_type:
+            base = base.where(Activity.sport_type == sport_type)
+
+        # Total count
+        count_stmt = select(func.count(Activity.id))
+        if sport_type:
+            count_stmt = count_stmt.where(Activity.sport_type == sport_type)
+        total = session.exec(count_stmt).one()
+
+        # Page of activities
+        stmt = (
+            base
+            .order_by(col(Activity.start_date_epoch).desc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+        )
+        activities = session.exec(stmt).all()
+
+    total_pages = (total + per_page - 1) // per_page if total > 0 else 0
+
+    return {
+        "activities": [
+            {
+                "id": a.id,
+                "name": a.name,
+                "sport_type": a.sport_type,
+                "start_date": a.start_date,
+                "start_date_local": a.start_date_local,
+                "distance": a.distance,
+                "moving_time": a.moving_time,
+                "total_elevation_gain": a.total_elevation_gain,
+                "average_speed": a.average_speed,
+                "has_heartrate": a.has_heartrate,
+                "average_heartrate": a.average_heartrate,
+                "suffer_score": a.suffer_score,
+                "kudos_count": a.kudos_count,
+            }
+            for a in activities
+        ],
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "total_pages": total_pages,
+    }
