@@ -65,7 +65,13 @@ def training_heatmap(
 
     with _get_session(request) as session:
         stmt = (
-            select(Activity)
+            select(
+                Activity.start_date_local,
+                Activity.start_date,
+                Activity.moving_time,
+                Activity.has_heartrate,
+                Activity.average_heartrate,
+            )
             .where(col(Activity.start_date_epoch) >= cutoff)
             .order_by(col(Activity.start_date_epoch).asc())
         )
@@ -237,7 +243,14 @@ def whats_working(request: Request):
 
     with _get_session(request) as session:
         stmt = (
-            select(Activity)
+            select(
+                Activity.start_date_epoch,
+                Activity.distance,
+                Activity.moving_time,
+                Activity.sport_type,
+                Activity.has_heartrate,
+                Activity.average_heartrate,
+            )
             .where(col(Activity.sport_type).in_(RUN_SPORT_TYPES))
             .where(col(Activity.start_date_epoch) >= cutoff)
             .order_by(col(Activity.start_date_epoch).asc())
@@ -396,7 +409,13 @@ def fitness_model(
 
     with _get_session(request) as session:
         stmt = (
-            select(Activity)
+            select(
+                Activity.start_date_local,
+                Activity.start_date,
+                Activity.moving_time,
+                Activity.average_heartrate,
+                Activity.max_heartrate,
+            )
             .where(col(Activity.has_heartrate) == True)  # noqa: E712
             .where(col(Activity.average_heartrate).isnot(None))
             .where(col(Activity.start_date_epoch) >= cutoff)
@@ -476,7 +495,14 @@ def weekly_report(request: Request):
 
     with _get_session(request) as session:
         stmt = (
-            select(Activity)
+            select(
+                Activity.start_date_epoch,
+                Activity.sport_type,
+                Activity.distance,
+                Activity.moving_time,
+                Activity.has_heartrate,
+                Activity.average_heartrate,
+            )
             .where(col(Activity.start_date_epoch) >= last_monday_epoch)
             .order_by(col(Activity.start_date_epoch).asc())
         )
