@@ -22,13 +22,13 @@ jobs:
           cache-dependency-glob: backend/pyproject.toml
 
       - name: Install dependencies
-        run: cd backend && uv pip install --system ".[dev]"
+        run: cd backend && uv sync --dev
 
       - name: Run tests
         env:
           STRAVA_CLIENT_ID: "0"
           STRAVA_CLIENT_SECRET: "fake"
-        run: cd backend && python -m pytest tests/ -x -q
+        run: cd backend && uv run pytest tests/ -x -q
 
   frontend-build:
     runs-on: ubuntu-latest
