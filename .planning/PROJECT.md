@@ -8,6 +8,14 @@ A personal fitness dashboard that pulls data from the Strava API and presents it
 
 See the story your training data tells — trends, progress, and projections — in one beautiful, personal dashboard.
 
+## Current Milestone: v2.0 Enhanced Features
+**Goal:** Deepen the analytical value of the dashboard with interactive maps, training load visualizations, and a workout projector that models the impact of training plans on key fitness metrics.
+
+**Target features:**
+- Enhanced Activity Drill-Down: route map with pace/HR color overlay, elevation profile
+- Workout Projector: input a training plan, see projected impact on pace, HR zones, and VO2 max
+- Enhanced Dashboard: training week heatmap (calendar density view), best efforts timeline
+
 ## Requirements
 
 ### Validated

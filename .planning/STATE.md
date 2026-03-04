@@ -9,9 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 6 of 6 complete
-Status: All phases implemented, tested, and deployed via Docker.
-Last activity: 2026-02-28 — Phase 6 complete: Docker deployment
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-04 — Milestone v2.0 started
 
 Progress: [██████████] 100%
 
