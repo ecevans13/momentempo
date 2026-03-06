@@ -23,7 +23,6 @@ PREDICTION_DISTANCES = [
     {"name": "10K", "meters": 10000},
     {"name": "Half Marathon", "meters": 21097},
     {"name": "Marathon", "meters": 42195},
-    {"name": "50K", "meters": 50000},
 ]
 
 # Anchor distances: Strava best_efforts names + fallback tolerance ranges
