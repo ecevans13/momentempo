@@ -106,37 +106,39 @@ export default function FitnessChart() {
             labelFormatter={(d: string) => new Date(d + "T00:00:00").toLocaleDateString()}
             formatter={(value: number, name: string) => {
               const labels: Record<string, string> = {
-                ctl: "CTL (Fitness)",
-                atl: "ATL (Fatigue)",
-                tsb: "TSB (Form)",
+                ctl: "Fitness (CTL)",
+                atl: "Fatigue (ATL)",
+                tsb: "Freshness (TSB)",
               };
               return [value.toFixed(1), labels[name] || name];
             }}
           />
           <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="3 3" />
+          <Line type="monotone" dataKey="ctl" stroke="#6366F1" strokeWidth={2} dot={false} name="ctl" />
+          <Line type="monotone" dataKey="atl" stroke="#F43F5E" strokeWidth={2} dot={false} name="atl" />
           <Area
             type="monotone"
             dataKey="tsb"
             fill="#14B8A6"
             fillOpacity={0.1}
-            stroke="none"
+            stroke="#14B8A6"
+            strokeWidth={2}
+            dot={false}
+            name="tsb"
           />
-          <Line type="monotone" dataKey="ctl" stroke="#6366F1" strokeWidth={2} dot={false} name="ctl" />
-          <Line type="monotone" dataKey="atl" stroke="#F43F5E" strokeWidth={2} dot={false} name="atl" />
-          <Line type="monotone" dataKey="tsb" stroke="#14B8A6" strokeWidth={2} dot={false} name="tsb" />
         </ComposedChart>
       </ResponsiveContainer>
 
       {/* Legend */}
       <div className="flex justify-center gap-6 text-xs text-gray-500">
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-indigo-500 inline-block" /> CTL (Fitness)
+          <span className="w-3 h-0.5 bg-indigo-500 inline-block" /> Fitness (CTL)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-rose-500 inline-block" /> ATL (Fatigue)
+          <span className="w-3 h-0.5 bg-rose-500 inline-block" /> Fatigue (ATL)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-teal-500 inline-block" /> TSB (Form)
+          <span className="w-3 h-0.5 bg-teal-500 inline-block" /> Freshness (TSB)
         </span>
       </div>
     </div>

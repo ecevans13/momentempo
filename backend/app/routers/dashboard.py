@@ -27,50 +27,77 @@ def _get_session(request: Request) -> Session:
     return Session(request.app.state.engine)
 
 
+def _apply_sport_filter(stmt, sport_type: str | None):
+    """Apply sport_type filter, supporting 'Run:indoor' / 'Run:outdoor' variants."""
+    if not sport_type:
+        return stmt
+    if ":" in sport_type:
+        base_sport, locality = sport_type.split(":", 1)
+        stmt = stmt.where(Activity.sport_type == base_sport)
+        if locality == "outdoor":
+            stmt = stmt.where(
+                col(Activity.summary_polyline).isnot(None),
+                col(Activity.summary_polyline) != "",
+            )
+        elif locality == "indoor":
+            stmt = stmt.where(
+                (col(Activity.summary_polyline).is_(None))
+                | (col(Activity.summary_polyline) == "")
+            )
+    else:
+        stmt = stmt.where(Activity.sport_type == sport_type)
+    return stmt
+
+
 @router.get("/dashboard/summary")
 def dashboard_summary(
     request: Request,
     period: str = Query("month", pattern="^(week|month|year|all)$"),
 ):
-    """Key metrics aggregated over a time period."""
+    """Key metrics aggregated over a time period — uses SQL aggregates, no Python-side summing."""
+    cutoff: int | None = None
+    period_start: str | None = None
+    if period != "all":
+        cutoff = int(time.time() - PERIOD_SECONDS[period])
+        period_start = datetime.fromtimestamp(cutoff, tz=timezone.utc).isoformat()
+
     with _get_session(request) as session:
-        stmt = select(Activity)
-        if period != "all":
-            cutoff = int(time.time() - PERIOD_SECONDS[period])
-            stmt = stmt.where(col(Activity.start_date_epoch) >= cutoff)
+        # Single query for all totals
+        agg = select(
+            func.count(Activity.id),
+            func.sum(Activity.distance),
+            func.sum(Activity.moving_time),
+            func.sum(Activity.total_elevation_gain),
+        )
+        if cutoff is not None:
+            agg = agg.where(col(Activity.start_date_epoch) >= cutoff)
+        count, total_distance, total_moving_time, total_elevation = session.exec(agg).one()
+        total_distance = total_distance or 0.0
+        total_moving_time = total_moving_time or 0
+        total_elevation = total_elevation or 0.0
+        count = count or 0
 
-        activities = session.exec(stmt).all()
+        # Pace: aggregate only run-like activities with distance
+        run_agg = select(
+            func.sum(Activity.moving_time),
+            func.sum(Activity.distance),
+        ).where(
+            col(Activity.sport_type).in_(RUN_SPORT_TYPES),
+            col(Activity.distance) > 0,
+        )
+        if cutoff is not None:
+            run_agg = run_agg.where(col(Activity.start_date_epoch) >= cutoff)
+        run_time, run_dist = session.exec(run_agg).one()
+        avg_pace = ((run_time / run_dist) * 1000) if (run_time and run_dist) else None
 
-        total_distance = sum(a.distance for a in activities)
-        total_moving_time = sum(a.moving_time for a in activities)
-        total_elevation = sum(a.total_elevation_gain for a in activities)
-        count = len(activities)
-
-        # Pace: only for run-like activities with nonzero distance
-        run_activities = [
-            a for a in activities
-            if a.sport_type in RUN_SPORT_TYPES and a.distance > 0
-        ]
-        if run_activities:
-            run_time = sum(a.moving_time for a in run_activities)
-            run_dist = sum(a.distance for a in run_activities)
-            avg_pace = (run_time / run_dist) * 1000 if run_dist > 0 else None
-        else:
-            avg_pace = None
-
-        # Average heartrate across activities that have it
-        hr_values = [
-            a.average_heartrate for a in activities
-            if a.has_heartrate and a.average_heartrate is not None
-        ]
-        avg_hr = sum(hr_values) / len(hr_values) if hr_values else None
-
-        # Determine period_start
-        if period == "all":
-            period_start = None
-        else:
-            cutoff_epoch = int(time.time() - PERIOD_SECONDS[period])
-            period_start = datetime.fromtimestamp(cutoff_epoch, tz=timezone.utc).isoformat()
+        # Average HR
+        hr_agg = select(func.avg(Activity.average_heartrate)).where(
+            col(Activity.has_heartrate) == True,  # noqa: E712
+            col(Activity.average_heartrate).isnot(None),
+        )
+        if cutoff is not None:
+            hr_agg = hr_agg.where(col(Activity.start_date_epoch) >= cutoff)
+        avg_hr = session.exec(hr_agg).one()
 
     return {
         "period": period,
@@ -95,13 +122,19 @@ def dashboard_trends(
     """Time-series data for trend charts."""
     with _get_session(request) as session:
         cutoff = int(time.time() - months * 30 * 86400)
-        stmt = select(Activity).where(col(Activity.start_date_epoch) >= cutoff)
-        if sport_type:
-            stmt = stmt.where(Activity.sport_type == sport_type)
+        # Select only the columns needed for bucketing + aggregation
+        stmt = select(
+            Activity.start_date_epoch,
+            Activity.distance,
+            Activity.moving_time,
+            Activity.total_elevation_gain,
+            Activity.sport_type,
+        ).where(col(Activity.start_date_epoch) >= cutoff)
+        stmt = _apply_sport_filter(stmt, sport_type)
         activities = session.exec(stmt).all()
 
-    # Group activities by period bucket
-    buckets: dict[str, list[Activity]] = {}
+    # Group activities by period bucket (rows support attribute access)
+    buckets: dict[str, list] = {}
     for a in activities:
         dt = datetime.fromtimestamp(a.start_date_epoch, tz=timezone.utc)
         if granularity == "weekly":
@@ -151,13 +184,11 @@ def list_activities(
     """Paginated activity feed."""
     with _get_session(request) as session:
         base = select(Activity)
-        if sport_type:
-            base = base.where(Activity.sport_type == sport_type)
+        base = _apply_sport_filter(base, sport_type)
 
         # Total count
         count_stmt = select(func.count(Activity.id))
-        if sport_type:
-            count_stmt = count_stmt.where(Activity.sport_type == sport_type)
+        count_stmt = _apply_sport_filter(count_stmt, sport_type)
         total = session.exec(count_stmt).one()
 
         # Page of activities

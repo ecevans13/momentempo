@@ -137,6 +137,24 @@ export default function TrendChart({ sportType }: { sportType?: string }) {
                 tick={{ fill: "#9ca3af", fontSize: 12 }}
                 tickLine={false}
                 axisLine={{ stroke: "#374151" }}
+                tickFormatter={(period: string) => {
+                  // "2025-W03" → week start date, "2025-03" → "Mar '25"
+                  if (period.includes("-W")) {
+                    const [yearStr, weekStr] = period.split("-W");
+                    const year = parseInt(yearStr);
+                    const week = parseInt(weekStr);
+                    // ISO week to date: Jan 4 is always in week 1
+                    const jan4 = new Date(year, 0, 4);
+                    const start = new Date(jan4);
+                    start.setDate(jan4.getDate() - jan4.getDay() + 1 + (week - 1) * 7);
+                    return start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  }
+                  // Monthly: "2025-03" → "Mar '25"
+                  const [y, m] = period.split("-");
+                  const d = new Date(parseInt(y), parseInt(m) - 1);
+                  return d.toLocaleDateString("en-US", { month: "short" }) + " '" + y.slice(2);
+                }}
+                minTickGap={40}
               />
               <YAxis
                 tick={{ fill: "#9ca3af", fontSize: 12 }}

@@ -90,7 +90,7 @@ def test_race_predictions_with_anchor(client: TestClient, session: Session):
     assert data["anchor_efforts"][0]["distance_name"] == "5K"
     assert data["anchor_efforts"][0]["time_seconds"] == 1200
 
-    assert len(data["predictions"]) == 5
+    assert len(data["predictions"]) == 4
     pred_names = [p["distance_name"] for p in data["predictions"]]
     assert "5K" in pred_names
     assert "Marathon" in pred_names

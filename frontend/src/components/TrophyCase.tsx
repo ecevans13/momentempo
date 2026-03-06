@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { fetchPRs, fetchMilestones, fetchTimeline, createMilestone, deleteMilestone } from "../api/client";
 import type { PRItem, MilestoneItem, TimelineEvent } from "../api/types";
-import { formatDuration, formatRelativeDate } from "../utils/format";
+import { formatRelativeDate, formatDurationWithSeconds } from "../utils/format";
 
 function PRCard({ pr }: { pr: PRItem }) {
   if (!pr.activity_id) {
@@ -15,7 +15,7 @@ function PRCard({ pr }: { pr: PRItem }) {
   return (
     <div className="rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4">
       <p className="text-sm font-medium text-gray-900 dark:text-white">{pr.distance_name}</p>
-      <p className="text-xl font-bold text-emerald-400 mt-1">{formatDuration(pr.moving_time!)}</p>
+      <p className="text-xl font-bold text-emerald-400 mt-1">{formatDurationWithSeconds(pr.moving_time!)}</p>
       <p className="text-xs text-gray-500 mt-1 truncate">{pr.activity_name}</p>
       {pr.start_date && <p className="text-xs text-gray-400">{formatRelativeDate(pr.start_date)}</p>}
     </div>

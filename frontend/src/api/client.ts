@@ -154,3 +154,7 @@ export async function uploadHealthExport(file: File): Promise<HealthImportRespon
 export function fetchHealthSummary(): Promise<HealthSummaryResponse> {
   return fetchJSON("/api/health/summary");
 }
+
+export function fetchHealthHistory(): Promise<import("./types").HealthHistoryResponse> {
+  return fetchJSON("/api/health/history");
+}

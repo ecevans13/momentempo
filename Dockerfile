@@ -15,10 +15,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Install backend dependencies
 COPY backend/pyproject.toml backend/
-RUN cd backend && uv pip install --system .
-
-# Copy backend source
 COPY backend/app backend/app
+RUN cd backend && uv pip install --system .
 
 # Copy built frontend from stage 1
 COPY --from=frontend-build /app/frontend/dist frontend/dist

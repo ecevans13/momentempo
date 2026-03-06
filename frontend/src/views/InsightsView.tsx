@@ -4,8 +4,6 @@ import WeeklyReport from "../components/WeeklyReport";
 import TrainingHeatmap from "../components/TrainingHeatmap";
 import FitnessChart from "../components/FitnessChart";
 import RacePredictor from "../components/RacePredictor";
-import WhatsWorking from "../components/WhatsWorking";
-import TrainingCoach from "../components/TrainingCoach";
 import HealthImport from "../components/HealthImport";
 import ActivityDetail from "../components/ActivityDetail";
 
@@ -59,20 +57,8 @@ export default function InsightsView() {
       </ErrorBoundary>
 
       <ErrorBoundary>
-        <Section title="What's Working">
-          <WhatsWorking />
-        </Section>
-      </ErrorBoundary>
-
-      <ErrorBoundary>
         <Section title="Health Data">
           <HealthImport />
-        </Section>
-      </ErrorBoundary>
-
-      <ErrorBoundary>
-        <Section title="AI Training Coach">
-          <TrainingCoach />
         </Section>
       </ErrorBoundary>
     </div>

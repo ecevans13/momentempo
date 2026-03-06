@@ -7,6 +7,7 @@ import {
   fetchWeeklyReport,
   fetchCoachAdvice,
   fetchHealthSummary,
+  fetchHealthHistory,
 } from "../api/client";
 import type {
   HeatmapResponse,
@@ -16,6 +17,7 @@ import type {
   WeeklyReportResponse,
   CoachResponse,
   HealthSummaryResponse,
+  HealthHistoryResponse,
 } from "../api/types";
 
 export function useHeatmap(months: number = 12) {
@@ -147,4 +149,23 @@ export function useHealthSummary() {
   }, [refresh]);
 
   return { data, loading, error, refresh };
+}
+
+export function useHealthHistory() {
+  const [data, setData] = useState<HealthHistoryResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(() => {
+    setLoading(true);
+    fetchHealthHistory()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { data, loading, refresh };
 }

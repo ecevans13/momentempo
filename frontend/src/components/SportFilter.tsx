@@ -1,6 +1,8 @@
 const SPORTS = [
   { value: "", label: "All Sports" },
   { value: "Run", label: "Run" },
+  { value: "Run:outdoor", label: "Run (Outdoor)" },
+  { value: "Run:indoor", label: "Run (Indoor)" },
   { value: "TrailRun", label: "Trail Run" },
   { value: "Ride", label: "Ride" },
   { value: "Swim", label: "Swim" },

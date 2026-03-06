@@ -271,6 +271,15 @@ export interface HealthSummaryResponse {
   has_data: boolean;
 }
 
+export interface HealthHistoryPoint {
+  date: string;
+  value: number;
+}
+
+export interface HealthHistoryResponse {
+  history: Record<string, HealthHistoryPoint[]>;
+}
+
 // Activity detail extension
 export interface ActivityDetailResponse {
   id: number;
