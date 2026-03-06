@@ -72,6 +72,7 @@ export default function HRDriftChart({ splits }: HRDriftChartProps) {
             labelFormatter={(label: number) => `Split ${label}`}
             contentStyle={{ backgroundColor: "#1f2937", border: "none", borderRadius: 8, fontSize: 13 }}
             labelStyle={{ color: "#9ca3af" }}
+            itemSorter={(item) => (item.dataKey === "hr" ? 0 : 1)}
           />
           <Line
             yAxisId="pace"
