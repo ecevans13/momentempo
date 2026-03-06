@@ -27,6 +27,28 @@ def _get_session(request: Request) -> Session:
     return Session(request.app.state.engine)
 
 
+def _apply_sport_filter(stmt, sport_type: str | None):
+    """Apply sport_type filter, supporting 'Run:indoor' / 'Run:outdoor' variants."""
+    if not sport_type:
+        return stmt
+    if ":" in sport_type:
+        base_sport, locality = sport_type.split(":", 1)
+        stmt = stmt.where(Activity.sport_type == base_sport)
+        if locality == "outdoor":
+            stmt = stmt.where(
+                col(Activity.summary_polyline).isnot(None),
+                col(Activity.summary_polyline) != "",
+            )
+        elif locality == "indoor":
+            stmt = stmt.where(
+                (col(Activity.summary_polyline).is_(None))
+                | (col(Activity.summary_polyline) == "")
+            )
+    else:
+        stmt = stmt.where(Activity.sport_type == sport_type)
+    return stmt
+
+
 @router.get("/dashboard/summary")
 def dashboard_summary(
     request: Request,
@@ -108,8 +130,7 @@ def dashboard_trends(
             Activity.total_elevation_gain,
             Activity.sport_type,
         ).where(col(Activity.start_date_epoch) >= cutoff)
-        if sport_type:
-            stmt = stmt.where(Activity.sport_type == sport_type)
+        stmt = _apply_sport_filter(stmt, sport_type)
         activities = session.exec(stmt).all()
 
     # Group activities by period bucket (rows support attribute access)
@@ -163,13 +184,11 @@ def list_activities(
     """Paginated activity feed."""
     with _get_session(request) as session:
         base = select(Activity)
-        if sport_type:
-            base = base.where(Activity.sport_type == sport_type)
+        base = _apply_sport_filter(base, sport_type)
 
         # Total count
         count_stmt = select(func.count(Activity.id))
-        if sport_type:
-            count_stmt = count_stmt.where(Activity.sport_type == sport_type)
+        count_stmt = _apply_sport_filter(count_stmt, sport_type)
         total = session.exec(count_stmt).one()
 
         # Page of activities

@@ -1,6 +1,7 @@
 """Gear gallery endpoint: fetch gear details from Strava."""
 
 import logging
+import time
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
@@ -14,6 +15,10 @@ from ..services.strava_client import strava_get
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/gear", tags=["gear"])
+
+# In-memory cache: gear_id -> (data_dict, timestamp)
+_gear_cache: dict[str, tuple[dict, float]] = {}
+_GEAR_CACHE_TTL = 3600  # 1 hour
 
 
 def _get_session(request: Request) -> Session:
@@ -40,42 +45,54 @@ async def list_gear(request: Request):
         if not gear_ids:
             return {"gear": []}
 
-        # Fetch each gear's details from Strava + compute distance from local data
+        # Fetch each gear's details from Strava (with cache) + compute distance from local data
         gear_list = []
-        async with httpx.AsyncClient(verify=get_settings().ssl_verify) as client:
-            for gear_id in gear_ids:
-                try:
-                    response, _ = await strava_get(
-                        client,
-                        f"/gear/{gear_id}",
-                        token.access_token,
-                    )
-                    if response.status_code != 200:
-                        continue
-                    data = response.json()
+        now = time.time()
+        uncached_ids = [
+            gid for gid in gear_ids
+            if gid not in _gear_cache or now - _gear_cache[gid][1] > _GEAR_CACHE_TTL
+        ]
 
-                    # Count activities and distance for this gear from local DB
-                    activity_count_stmt = select(Activity).where(
-                        Activity.gear_id == gear_id
-                    )
-                    activities = session.exec(activity_count_stmt).all()
-                    local_distance = sum(a.distance for a in activities)
-                    local_count = len(activities)
+        # Only call Strava for uncached gear
+        if uncached_ids:
+            async with httpx.AsyncClient(verify=get_settings().ssl_verify) as client:
+                for gear_id in uncached_ids:
+                    try:
+                        response, _ = await strava_get(
+                            client,
+                            f"/gear/{gear_id}",
+                            token.access_token,
+                        )
+                        if response.status_code != 200:
+                            continue
+                        _gear_cache[gear_id] = (response.json(), now)
+                    except Exception as exc:
+                        logger.warning("Failed to fetch gear %s: %s", gear_id, exc)
 
-                    gear_list.append({
-                        "id": data.get("id", gear_id),
-                        "name": data.get("name", "Unknown"),
-                        "nickname": data.get("nickname", ""),
-                        "brand_name": data.get("brand_name", ""),
-                        "model_name": data.get("model_name", ""),
-                        "distance": data.get("distance", local_distance),
-                        "activity_count": local_count,
-                        "type": data.get("resource_state", ""),
-                        "retired": data.get("retired", False),
-                    })
-                except Exception as exc:
-                    logger.warning("Failed to fetch gear %s: %s", gear_id, exc)
-                    continue
+        for gear_id in gear_ids:
+            if gear_id not in _gear_cache:
+                continue
+            data, _ = _gear_cache[gear_id]
+
+            # Count activities and distance for this gear from local DB
+            activity_count_stmt = select(Activity).where(
+                Activity.gear_id == gear_id
+            )
+            activities = session.exec(activity_count_stmt).all()
+            local_distance = sum(a.distance for a in activities)
+            local_count = len(activities)
+
+            gear_list.append({
+                "id": data.get("id", gear_id),
+                "name": data.get("name", "Unknown"),
+                "nickname": data.get("nickname", ""),
+                "brand_name": data.get("brand_name", ""),
+                "model_name": data.get("model_name", ""),
+                "distance": data.get("distance", local_distance),
+                "activity_count": local_count,
+                "type": data.get("resource_state", ""),
+                "retired": data.get("retired", False),
+            })
 
         return {"gear": gear_list}
 

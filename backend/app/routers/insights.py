@@ -238,8 +238,8 @@ def race_predictions(request: Request):
 
 @router.get("/whats-working")
 def whats_working(request: Request):
-    """Correlation analysis of training patterns vs performance over recent months."""
-    cutoff = int(time.time() - 6 * 30 * 86400)
+    """Correlation analysis of training patterns vs performance over recent weeks."""
+    cutoff = int(time.time() - 8 * 7 * 86400)  # ~8 weeks for more responsive insights
 
     with _get_session(request) as session:
         stmt = (

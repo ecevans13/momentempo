@@ -209,3 +209,31 @@ def health_summary(request: Request):
                 })
 
         return {"metrics": metrics, "has_data": True}
+
+
+@router.get("/history")
+def health_history(request: Request):
+    """Return recent data points per metric for mini trend charts."""
+    with _get_session(request) as session:
+        types = session.exec(
+            select(HealthMetric.metric_type).distinct()
+        ).all()
+
+        if not types:
+            return {"history": {}}
+
+        history: dict[str, list[dict]] = {}
+        for mt in types:
+            rows = session.exec(
+                select(HealthMetric.date, HealthMetric.value)
+                .where(col(HealthMetric.metric_type) == mt)
+                .order_by(col(HealthMetric.date).desc())
+                .limit(14)  # ~2 weeks of data points
+            ).all()
+            if rows:
+                history[mt] = [
+                    {"date": r.date, "value": r.value}
+                    for r in reversed(rows)  # oldest first for chart
+                ]
+
+        return {"history": history}

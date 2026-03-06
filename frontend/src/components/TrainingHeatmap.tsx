@@ -1,8 +1,19 @@
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useHeatmap } from "../hooks/useInsights";
 import { fetchHeatmapDay } from "../api/client";
 import type { HeatmapDayActivity } from "../api/types";
 import { formatDistance, formatDuration, formatPace, formatElevation } from "../utils/format";
+
+function useDarkMode(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      const observer = new MutationObserver(cb);
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+      return () => observer.disconnect();
+    },
+    () => document.documentElement.classList.contains("dark"),
+  );
+}
 
 const DAY_LABELS = ["Mon", "", "Wed", "", "Fri", "", "Sun"];
 const CELL_SIZE = 13;
@@ -144,7 +155,7 @@ export default function TrainingHeatmap({ onSelectActivity }: { onSelectActivity
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayActivities, setDayActivities] = useState<HeatmapDayActivity[]>([]);
   const [dayLoading, setDayLoading] = useState(false);
-  const isDark = document.documentElement.classList.contains("dark");
+  const isDark = useDarkMode();
 
   function handleDayClick(date: string) {
     if (selectedDate === date) {
