@@ -55,6 +55,7 @@ export default function HRDriftChart({ splits }: HRDriftChartProps) {
             tickFormatter={(v: number) => formatPace(v)}
             tick={{ fontSize: 11 }}
             width={80}
+            label={{ value: "Pace", angle: -90, position: "insideLeft", offset: 10, fontSize: 11, fill: "#9ca3af" }}
           />
           <YAxis
             yAxisId="hr"
