@@ -62,6 +62,7 @@ export default function HealthImport() {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<HealthImportResponse | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState(false);
   const { data: summary, loading: summaryLoading, refresh } = useHealthSummary();
   const { data: historyData, refresh: refreshHistory } = useHealthHistory();
 
@@ -116,39 +117,51 @@ export default function HealthImport() {
 
       {/* Health summary cards */}
       {summary?.has_data && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {summary.metrics.map((m) => {
-            const display = displayValue(m.metric_type, m.latest_value, m.unit);
-            const history = historyData?.history[m.metric_type];
-            return (
-              <div
-                key={m.metric_type}
-                className="rounded-lg bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-3"
+        <div className="relative">
+          {!revealed && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center">
+              <button
+                onClick={() => setRevealed(true)}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-white/90 dark:bg-gray-800/90 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 shadow-sm hover:bg-white dark:hover:bg-gray-700 transition-colors"
               >
-                <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">
-                  {METRIC_LABELS[m.metric_type] || m.metric_type}
-                </p>
-                <p className="text-base font-semibold text-gray-900 dark:text-white">
-                  {display.value}
-                  <span className="text-xs font-normal text-gray-500 ml-1">{display.unit}</span>
-                </p>
-                {history && history.length >= 2 && (
-                  <MiniSparkline points={history} metricType={m.metric_type} unit={m.unit} />
-                )}
-                {m.trend_pct !== null && (
-                  <p
-                    className={`text-[10px] mt-0.5 ${
-                      m.trend_pct > 0 ? "text-emerald-500" : m.trend_pct < 0 ? "text-red-500" : "text-gray-400"
-                    }`}
-                  >
-                    {m.trend_pct > 0 ? "+" : ""}
-                    {m.trend_pct.toFixed(1)}% trend
+                View Data
+              </button>
+            </div>
+          )}
+          <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 transition-all duration-300 ${!revealed ? "blur-md select-none" : ""}`}>
+            {summary.metrics.map((m) => {
+              const display = displayValue(m.metric_type, m.latest_value, m.unit);
+              const history = historyData?.history[m.metric_type];
+              return (
+                <div
+                  key={m.metric_type}
+                  className="rounded-lg bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-3"
+                >
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">
+                    {METRIC_LABELS[m.metric_type] || m.metric_type}
                   </p>
-                )}
-                <p className="text-[10px] text-gray-400 mt-0.5">{m.latest_date}</p>
-              </div>
-            );
-          })}
+                  <p className="text-base font-semibold text-gray-900 dark:text-white">
+                    {display.value}
+                    <span className="text-xs font-normal text-gray-500 ml-1">{display.unit}</span>
+                  </p>
+                  {history && history.length >= 2 && (
+                    <MiniSparkline points={history} metricType={m.metric_type} unit={m.unit} />
+                  )}
+                  {m.trend_pct !== null && (
+                    <p
+                      className={`text-[10px] mt-0.5 ${
+                        m.trend_pct > 0 ? "text-emerald-500" : m.trend_pct < 0 ? "text-red-500" : "text-gray-400"
+                      }`}
+                    >
+                      {m.trend_pct > 0 ? "+" : ""}
+                      {m.trend_pct.toFixed(1)}% trend
+                    </p>
+                  )}
+                  <p className="text-[10px] text-gray-400 mt-0.5">{m.latest_date}</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
