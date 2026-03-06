@@ -45,6 +45,7 @@ export default function ElevationProfile({ splits }: ElevationProfileProps) {
           tickFormatter={(v: number) => formatElevation(v)}
           tick={{ fontSize: 11 }}
           width={72}
+          label={{ value: "Elevation", angle: -90, position: "insideLeft", offset: 10, fontSize: 11, fill: "#9ca3af" }}
         />
         <Tooltip
           formatter={(value: number) => [formatElevation(value), "Elevation"]}
