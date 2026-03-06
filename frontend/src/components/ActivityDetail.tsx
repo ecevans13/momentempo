@@ -10,7 +10,6 @@ import {
 } from "../utils/format";
 import SplitsTable from "./SplitsTable";
 import HRZoneChart from "./HRZoneChart";
-import PaceDecayChart from "./PaceDecayChart";
 import HRDriftChart from "./HRDriftChart";
 import ElevationProfile from "./ElevationProfile";
 import RouteReplay from "./RouteReplay";
@@ -154,16 +153,9 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
         </Section>
       )}
 
-      {/* Pace Decay */}
-      {isRun && splits.length > 1 && (
-        <Section title="Pace Decay">
-          <PaceDecayChart splits={splits} />
-        </Section>
-      )}
-
-      {/* HR Drift */}
+      {/* Pace & HR Drift */}
       {isRun && splitsWithHR.length > 1 && (
-        <Section title="Heart Rate Drift">
+        <Section title="Pace & HR Drift">
           <HRDriftChart splits={splitsWithHR} />
         </Section>
       )}
