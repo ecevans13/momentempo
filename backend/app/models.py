@@ -1,5 +1,8 @@
 import time
+from typing import Any
 
+from sqlalchemy import Column
+from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 
@@ -88,6 +91,22 @@ class Activity(SQLModel, table=True):
 
     # Photo count
     total_photo_count: int = 0
+
+
+class ActivityStream(SQLModel, table=True):
+    """Cached GPS stream data for an activity. Null columns = stream not available."""
+    activity_id: int = Field(primary_key=True)  # Strava activity ID — not auto-increment
+
+    # Stream arrays — null means the stream was not available for this activity
+    latlng: list[Any] | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+    altitude: list[float] | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+    heartrate: list[int] | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+    velocity_smooth: list[float] | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+    time: list[int] | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+    distance: list[float] | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+
+    # Sentinel: if non-null, streams were fetched (even if no GPS data exists)
+    fetched_at: float | None = Field(default=None)
 
 
 class SyncState(SQLModel, table=True):
