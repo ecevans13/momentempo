@@ -13,7 +13,6 @@ import HRZoneChart from "./HRZoneChart";
 import HRDriftChart from "./HRDriftChart";
 import ElevationProfile from "./ElevationProfile";
 import RouteReplay from "./RouteReplay";
-import PaceMap from "./PaceMap";
 
 const RUN_TYPES = ["Run", "TrailRun", "VirtualRun", "Treadmill"];
 
@@ -36,15 +35,18 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
     Promise.all([
       fetchActivityDetail(activityId),
       fetchActivityZones(activityId).catch(() => ({ has_zones: false, zones: [] }) as ZonesResponse),
-      fetchActivityStreams(activityId).catch(() => null),
     ])
-      .then(([detailData, zonesData, streamsData]) => {
+      .then(([detailData, zonesData]) => {
         setDetail(detailData);
         setZones(zonesData);
-        setStreams(streamsData);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+
+    // Fetch streams separately so it doesn't block the initial render
+    fetchActivityStreams(activityId)
+      .then((s) => setStreams(s))
+      .catch(() => setStreams(null));
   }, [activityId]);
 
   if (loading) {
@@ -134,20 +136,15 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
         )}
       </div>
 
-      {/* Route: PaceMap (GPS) or RouteReplay fallback */}
-      {hasGPS ? (
-        <Section title="Route">
-          <PaceMap
-            latlng={streams!.latlng!}
-            velocity={streams!.velocity_smooth!}
-          />
-        </Section>
-      ) : detail.summary_polyline ? (
+      {/* Route Replay — pace-colored when GPS streams available */}
+      {detail.summary_polyline ? (
         <Section title="Route Replay">
           <RouteReplay
             polyline={detail.summary_polyline}
             totalDistance={detail.distance}
             totalTime={detail.moving_time}
+            gpsPoints={hasGPS ? streams!.latlng! : undefined}
+            velocity={hasGPS ? streams!.velocity_smooth! : undefined}
           />
         </Section>
       ) : null}
