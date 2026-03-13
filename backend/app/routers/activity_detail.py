@@ -10,6 +10,7 @@ from ..config import get_settings
 from ..models import Token
 from ..services.strava_auth import ensure_valid_token
 from ..services.strava_client import RateLimitState, strava_get
+from ..services.streams_service import fetch_and_cache_streams
 
 logger = logging.getLogger(__name__)
 
@@ -174,3 +175,44 @@ async def get_activity_zones(request: Request, activity_id: int):
             "total_time_seconds": total_time,
             "zones": zones,
         }
+
+
+@router.get("/{activity_id}/streams")
+async def get_activity_streams(request: Request, activity_id: int):
+    """Return cached GPS streams for an activity.
+
+    On first call: fetches from Strava and caches. Subsequent calls: reads from cache.
+    Activities without GPS return null stream fields (no error).
+    """
+    with _get_session(request) as session:
+        streams = await fetch_and_cache_streams(
+            activity_id, session, get_settings()
+        )
+
+    if streams is None:
+        # Defensive fallback — fetch_and_cache_streams always returns a row or raises
+        return {
+            "activity_id": activity_id,
+            "has_gps": False,
+            "has_altitude": False,
+            "has_heartrate": False,
+            "latlng": None,
+            "altitude": None,
+            "heartrate": None,
+            "velocity_smooth": None,
+            "time": None,
+            "distance": None,
+        }
+
+    return {
+        "activity_id": activity_id,
+        "has_gps": streams.latlng is not None,
+        "has_altitude": streams.altitude is not None,
+        "has_heartrate": streams.heartrate is not None,
+        "latlng": streams.latlng,
+        "altitude": streams.altitude,
+        "heartrate": streams.heartrate,
+        "velocity_smooth": streams.velocity_smooth,
+        "time": streams.time,
+        "distance": streams.distance,
+    }
