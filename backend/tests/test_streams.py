@@ -192,3 +192,134 @@ async def test_fetch_and_cache_streams_no_token(session: Session):
         await fetch_and_cache_streams(activity_id, session, get_test_settings())
 
     assert exc_info.value.status_code == 401
+
+
+# ── Integration tests (HTTP via TestClient) ───────────────────────────────────
+
+
+@respx.mock
+def test_streams_endpoint_cache_miss_fetches_and_returns(client, session: Session):
+    """Cache miss: endpoint fetches from Strava, returns stream data with flags."""
+    token = Token(
+        id=1,
+        access_token="test_access_token",
+        refresh_token="test_refresh_token",
+        expires_at=int(time.time()) + 3600,
+        athlete_name="Test User",
+    )
+    session.add(token)
+    session.commit()
+
+    activity_id = 12345
+    respx.get(f"{STRAVA_API}/activities/{activity_id}/streams").mock(
+        return_value=Response(200, json=SAMPLE_STREAMS_RESPONSE)
+    )
+
+    response = client.get(f"/api/activity/{activity_id}/streams")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["has_gps"] is True
+    assert data["has_altitude"] is True
+    assert data["has_heartrate"] is True
+    assert data["latlng"] == [[38.5, -122.8], [38.51, -122.81]]
+    assert data["altitude"] == [100.0, 102.5]
+    assert respx.calls.call_count == 1
+
+
+@respx.mock
+def test_streams_endpoint_cache_hit_no_api_call(client, session: Session):
+    """Cache hit: endpoint returns cached data without calling Strava."""
+    token = Token(
+        id=1,
+        access_token="test_access_token",
+        refresh_token="test_refresh_token",
+        expires_at=int(time.time()) + 3600,
+        athlete_name="Test User",
+    )
+    session.add(token)
+
+    activity_id = 12345
+    cached = ActivityStream(
+        activity_id=activity_id,
+        latlng=[[38.5, -122.8], [38.51, -122.81]],
+        altitude=[100.0, 102.5],
+        heartrate=[145, 150],
+        velocity_smooth=[3.2, 3.4],
+        time=[0, 5],
+        distance=[0.0, 15.5],
+        fetched_at=time.time(),
+    )
+    session.add(cached)
+    session.commit()
+
+    response = client.get(f"/api/activity/{activity_id}/streams")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["has_gps"] is True
+    assert data["latlng"] == [[38.5, -122.8], [38.51, -122.81]]
+    assert respx.calls.call_count == 0  # No Strava API call made
+
+
+@respx.mock
+def test_streams_endpoint_no_gps_activity(client, session: Session):
+    """No-GPS activity: endpoint returns has_gps=False with null arrays."""
+    token = Token(
+        id=1,
+        access_token="test_access_token",
+        refresh_token="test_refresh_token",
+        expires_at=int(time.time()) + 3600,
+        athlete_name="Test User",
+    )
+    session.add(token)
+    session.commit()
+
+    activity_id = 99999
+    respx.get(f"{STRAVA_API}/activities/{activity_id}/streams").mock(
+        return_value=Response(200, json={})
+    )
+
+    response = client.get(f"/api/activity/{activity_id}/streams")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["has_gps"] is False
+    assert data["has_altitude"] is False
+    assert data["has_heartrate"] is False
+    assert data["latlng"] is None
+    assert data["altitude"] is None
+    assert data["heartrate"] is None
+
+
+def test_streams_endpoint_no_token_returns_401(client):
+    """No token in DB: endpoint returns 401."""
+    response = client.get("/api/activity/12345/streams")
+    assert response.status_code == 401
+
+
+@respx.mock
+def test_streams_endpoint_second_call_uses_cache(client, session: Session):
+    """Second call to same activity uses cache — Strava API called only once."""
+    token = Token(
+        id=1,
+        access_token="test_access_token",
+        refresh_token="test_refresh_token",
+        expires_at=int(time.time()) + 3600,
+        athlete_name="Test User",
+    )
+    session.add(token)
+    session.commit()
+
+    activity_id = 12345
+    respx.get(f"{STRAVA_API}/activities/{activity_id}/streams").mock(
+        return_value=Response(200, json=SAMPLE_STREAMS_RESPONSE)
+    )
+
+    response1 = client.get(f"/api/activity/{activity_id}/streams")
+    assert response1.status_code == 200
+    assert respx.calls.call_count == 1
+
+    response2 = client.get(f"/api/activity/{activity_id}/streams")
+    assert response2.status_code == 200
+    assert respx.calls.call_count == 1  # Still 1 — second call used cache
