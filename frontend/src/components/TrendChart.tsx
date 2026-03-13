@@ -176,6 +176,23 @@ export default function TrendChart({ sportType }: { sportType?: string }) {
                   borderRadius: "8px",
                   color: "#f3f4f6",
                 }}
+                labelFormatter={(period: string) => {
+                  if (period.includes("-W")) {
+                    const [yearStr, weekStr] = period.split("-W");
+                    const year = parseInt(yearStr);
+                    const week = parseInt(weekStr);
+                    const jan4 = new Date(year, 0, 4);
+                    const start = new Date(jan4);
+                    start.setDate(jan4.getDate() - jan4.getDay() + 1 + (week - 1) * 7);
+                    const end = new Date(start);
+                    end.setDate(start.getDate() + 6);
+                    const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                    return `${fmt(start)} – ${fmt(end)}`;
+                  }
+                  const [y, m] = period.split("-");
+                  const d = new Date(parseInt(y), parseInt(m) - 1);
+                  return d.toLocaleDateString("en-US", { month: "short" }) + " '" + y.slice(2);
+                }}
                 formatter={(value: number) => [formatTickValue(value, metric), metric]}
               />
               <Area

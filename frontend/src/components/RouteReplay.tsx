@@ -8,9 +8,13 @@ interface RouteReplayProps {
   polyline: string;
   totalDistance: number;
   totalTime: number;
+  /** GPS latlng from streams — higher fidelity than summary polyline */
+  gpsPoints?: [number, number][];
+  /** Velocity array aligned with gpsPoints — enables pace coloring */
+  velocity?: number[];
 }
 
-export default function RouteReplay({ polyline, totalDistance, totalTime }: RouteReplayProps) {
+export default function RouteReplay({ polyline, totalDistance, totalTime, gpsPoints, velocity }: RouteReplayProps) {
   const points = decodePolyline(polyline);
 
   if (points.length < 2) return null;
@@ -23,7 +27,13 @@ export default function RouteReplay({ polyline, totalDistance, totalTime }: Rout
         </div>
       }
     >
-      <LeafletMap points={points} totalDistance={totalDistance} totalTime={totalTime} />
+      <LeafletMap
+        points={points}
+        totalDistance={totalDistance}
+        totalTime={totalTime}
+        gpsPoints={gpsPoints}
+        velocity={velocity}
+      />
     </Suspense>
   );
 }

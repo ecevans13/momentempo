@@ -1,13 +1,18 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from "react-leaflet";
 import type { LatLngBoundsExpression } from "leaflet";
 import { formatDistance, formatDuration } from "../utils/format";
+import { downsampleParallel } from "../utils/downsample";
 import "leaflet/dist/leaflet.css";
 
 interface RouteReplayMapProps {
   points: [number, number][];
   totalDistance: number;
   totalTime: number;
+  /** GPS latlng from streams — higher fidelity than summary polyline */
+  gpsPoints?: [number, number][];
+  /** Velocity array aligned with gpsPoints — enables pace coloring */
+  velocity?: number[];
 }
 
 const SPEEDS = [1, 2, 5, 10];
@@ -21,25 +26,66 @@ function FitBounds({ bounds }: { bounds: LatLngBoundsExpression }) {
   return null;
 }
 
-export default function RouteReplayMap({ points, totalDistance, totalTime }: RouteReplayMapProps) {
+/**
+ * Linearly interpolate between red (slow) and green (fast).
+ * t=0 => red rgb(239,68,68), t=1 => green rgb(34,197,94)
+ */
+function lerpColor(t: number): string {
+  const r = Math.round(239 + (34 - 239) * t);
+  const g = Math.round(68 + (197 - 68) * t);
+  const b = Math.round(68 + (94 - 68) * t);
+  return `rgb(${r},${g},${b})`;
+}
+
+const TARGET_POINTS = 300;
+
+export default function RouteReplayMap({ points, totalDistance, totalTime, gpsPoints, velocity }: RouteReplayMapProps) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0-1
   const [speed, setSpeed] = useState(1);
   const animFrameRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
 
+  // Use GPS points when available (higher fidelity), downsampled for performance
+  const hasPace = !!(gpsPoints && gpsPoints.length >= 2 && velocity && velocity.length >= 2);
+
+  const { routePoints, paceColors } = useMemo(() => {
+    if (!hasPace) return { routePoints: points, paceColors: null };
+
+    const len = Math.min(gpsPoints!.length, velocity!.length);
+    const trimmedLatLng = gpsPoints!.slice(0, len);
+    const trimmedVelocity = velocity!.slice(0, len);
+
+    const [sampledLatLng, sampledVelocity] = downsampleParallel(
+      [trimmedLatLng as unknown as number[][], trimmedVelocity as unknown as number[][]],
+      TARGET_POINTS,
+    ) as unknown as [[number, number][], number[]];
+
+    // Normalize velocity to 0-1 range for color mapping
+    const nonZero = sampledVelocity.filter((v) => v > 0);
+    const minSpeed = nonZero.length > 0 ? Math.min(...nonZero) : 0;
+    const maxSpeed = nonZero.length > 0 ? Math.max(...nonZero) : 1;
+    const range = maxSpeed - minSpeed || 1;
+
+    const colors = sampledVelocity.map((v) =>
+      v > 0 ? lerpColor((v - minSpeed) / range) : lerpColor(0),
+    );
+
+    return { routePoints: sampledLatLng, paceColors: colors };
+  }, [points, gpsPoints, velocity, hasPace]);
+
   const duration = DEFAULT_DURATION / speed; // actual playback duration in seconds
-  const currentIndex = Math.min(Math.floor(progress * points.length), points.length - 1);
-  const trailPoints = points.slice(0, currentIndex + 1);
-  const currentPoint = points[currentIndex];
+  const currentIndex = Math.min(Math.floor(progress * routePoints.length), routePoints.length - 1);
+  const trailPoints = routePoints.slice(0, currentIndex + 1);
+  const currentPoint = routePoints[currentIndex];
 
   // Compute cumulative distances for stats
   const cumulativeDistances = useRef<number[]>([]);
-  if (cumulativeDistances.current.length !== points.length) {
+  if (cumulativeDistances.current.length !== routePoints.length) {
     const dists = [0];
-    for (let i = 1; i < points.length; i++) {
-      const [lat1, lng1] = points[i - 1];
-      const [lat2, lng2] = points[i];
+    for (let i = 1; i < routePoints.length; i++) {
+      const [lat1, lng1] = routePoints[i - 1];
+      const [lat2, lng2] = routePoints[i];
       const R = 6371000;
       const dLat = ((lat2 - lat1) * Math.PI) / 180;
       const dLng = ((lng2 - lng1) * Math.PI) / 180;
@@ -54,7 +100,7 @@ export default function RouteReplayMap({ points, totalDistance, totalTime }: Rou
     cumulativeDistances.current = dists;
   }
 
-  const polylineTotalDist = cumulativeDistances.current[points.length - 1] || 1;
+  const polylineTotalDist = cumulativeDistances.current[routePoints.length - 1] || 1;
   const currentPolylineDist = cumulativeDistances.current[currentIndex] || 0;
   const progressRatio = currentPolylineDist / polylineTotalDist;
   const currentDistance = totalDistance * progressRatio;
@@ -90,7 +136,7 @@ export default function RouteReplayMap({ points, totalDistance, totalTime }: Rou
     return () => cancelAnimationFrame(animFrameRef.current);
   }, [playing, animate]);
 
-  const bounds = points.reduce(
+  const bounds = routePoints.reduce(
     (acc, [lat, lng]) => [
       [Math.min(acc[0][0], lat), Math.min(acc[0][1], lng)],
       [Math.max(acc[1][0], lat), Math.max(acc[1][1], lng)],
@@ -121,10 +167,18 @@ export default function RouteReplayMap({ points, totalDistance, totalTime }: Rou
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
           />
           {/* Full route - faint */}
-          <Polyline positions={points} color="#6B7280" weight={3} opacity={0.3} />
-          {/* Animated trail */}
+          <Polyline positions={routePoints} color="#6B7280" weight={3} opacity={0.3} />
+          {/* Animated trail — pace-colored segments or solid teal */}
           {trailPoints.length > 1 && (
-            <Polyline positions={trailPoints} color="#14B8A6" weight={4} opacity={0.9} />
+            paceColors
+              ? Array.from({ length: currentIndex }, (_, i) => (
+                  <Polyline
+                    key={i}
+                    positions={[routePoints[i], routePoints[i + 1]]}
+                    pathOptions={{ color: paceColors[i], weight: 4, opacity: 0.9 }}
+                  />
+                ))
+              : <Polyline positions={trailPoints} color="#14B8A6" weight={4} opacity={0.9} />
           )}
           {/* Current position marker */}
           {currentPoint && (
@@ -200,6 +254,20 @@ export default function RouteReplayMap({ points, totalDistance, totalTime }: Rou
           </span>
         )}
       </div>
+
+      {/* Pace legend */}
+      {paceColors && (
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <span>Slower</span>
+          <div
+            className="flex-1 h-2 rounded-full"
+            style={{
+              background: "linear-gradient(to right, rgb(239,68,68), rgb(34,197,94))",
+            }}
+          />
+          <span>Faster</span>
+        </div>
+      )}
     </div>
   );
 }
