@@ -48,8 +48,8 @@ Current milestone. 8 requirements across 4 categories.
 - [x] **STRM-01**: App lazily fetches GPS stream data (coordinates, altitude, HR, velocity) from Strava on first activity detail open and caches in SQLite; subsequent opens use the cache without calling Strava
 
 ### Activity Drill-Down (Enhanced)
-- [ ] **DRLL-03**: User sees route map colored by pace on activities with GPS data (faster segments green, slower segments red, scale normalized per activity)
-- [ ] **DRLL-04**: User sees smooth GPS altitude-based elevation profile on activities with altitude data (replaces splits-based approximation)
+- [x] **DRLL-03**: User sees route map colored by pace on activities with GPS data (faster segments green, slower segments red, scale normalized per activity)
+- [x] **DRLL-04**: User sees smooth GPS altitude-based elevation profile on activities with altitude data (replaces splits-based approximation)
 
 ### Dashboard (Enhanced)
 - [ ] **DASH-06**: User sees a best efforts progression timeline showing personal best times per standard distance (1mi, 5K, 10K, half marathon, marathon) over time — only rendered for distances with ≥2 recorded efforts
@@ -109,8 +109,8 @@ Deferred beyond v2.
 | UIUX-03 | Phase 3 | Complete |
 | UIUX-04 | Phase 6 | Complete |
 | STRM-01 | Phase 7 | Complete |
-| DRLL-03 | Phase 8 | Pending |
-| DRLL-04 | Phase 8 | Pending |
+| DRLL-03 | Phase 8 | Complete |
+| DRLL-04 | Phase 8 | Complete |
 | DASH-06 | Phase 9 | Pending |
 | PROJ-01 | Phase 10 | Pending |
 | PROJ-02 | Phase 10 | Pending |

@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-03-13T18:19:52.795Z"
+status: in_progress
+last_updated: "2026-03-13T19:20:00.000Z"
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # Project State
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** See the story your training data tells — trends, progress, and projections — in one beautiful, personal dashboard.
-**Current focus:** All phases complete
+**Current focus:** Phase 08 — Enhanced Activity Drill-Down
 
 ## Current Position
 
-Phase: 07-gps-streams-infrastructure
-Plan: 02 of 02 (complete)
-Status: Phase 07 complete
-Last activity: 2026-03-13 — Phase 07 Plan 02 complete (streams API endpoint + integration tests)
+Phase: 08-enhanced-activity-drill-down
+Plan: 01 of 01 (complete)
+Status: Phase 08 Plan 01 complete
+Last activity: 2026-03-13 — Phase 08 Plan 01 complete (PaceMap and GPS elevation profile)
 
 Progress: [██████████] 100%
 
@@ -50,11 +50,15 @@ Progress: [██████████] 100%
 ## Session Continuity
 
 Last session: 2026-03-13
-Stopped at: Completed 07-02-PLAN.md: streams API endpoint and integration tests
-Resume: Phase 07 complete. GET /api/activity/{id}/streams endpoint live. Ready for Phase 8 (route map rendering).
+Stopped at: Completed 08-01-PLAN.md: PaceMap components and GPS elevation profile
+Resume: Phase 08 Plan 01 complete. Pace-colored route map and GPS-based elevation profile live in ActivityDetail.
 
 ## Key Decisions (recent)
 
+- [08-01]: PaceMapLeaflet uses downsampleParallel to keep latlng/velocity aligned at 300 points
+- [08-01]: lerpColor linear RGB interpolation red (slow) to green (fast) for pace visualization
+- [08-01]: ElevationProfile GPS branch shows absolute altitude vs distance; splits fallback unchanged
+- [08-01]: ActivityDetail fetches streams with .catch(() => null) so GPS failures are silent
 - [07-02]: Boolean flags (has_gps/has_altitude/has_heartrate) in stream response for conditional frontend rendering
 - [07-01]: activity_id as primary key for ActivityStream enables session.merge() upsert
 - [07-01]: fetched_at sentinel field — non-null means fetch was attempted (even if no GPS data)
