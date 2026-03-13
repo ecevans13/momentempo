@@ -137,6 +137,24 @@ export interface TimelineEvent {
   milestone_id?: number;
 }
 
+// Landing page types
+
+export interface LandingActivity extends ActivityItem {
+  summary_polyline: string | null;
+}
+
+export interface LifetimeStats {
+  total_activities: number;
+  total_distance_m: number;
+  total_moving_time_s: number;
+  total_elevation_gain_m: number;
+}
+
+export interface LandingResponse {
+  lifetime_stats: LifetimeStats;
+  recent_activities: LandingActivity[];
+}
+
 export type Period = "week" | "month" | "year" | "all";
 export type Metric = "distance" | "duration" | "pace" | "elevation" | "count";
 export type Granularity = "weekly" | "monthly";

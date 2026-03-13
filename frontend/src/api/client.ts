@@ -15,6 +15,7 @@ import type {
   CoachResponse,
   HealthImportResponse,
   HealthSummaryResponse,
+  LandingResponse,
   Period,
   Metric,
   Granularity,
@@ -26,6 +27,10 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
     throw new Error(`API error: ${res.status} ${res.statusText}`);
   }
   return res.json() as Promise<T>;
+}
+
+export function fetchLandingData(): Promise<LandingResponse> {
+  return fetchJSON("/api/landing/recent");
 }
 
 export function fetchSummary(period: Period): Promise<SummaryResponse> {
