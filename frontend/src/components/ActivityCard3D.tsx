@@ -51,6 +51,7 @@ const ActivityCard3D = forwardRef<HTMLDivElement, ActivityCard3DProps>(
         className={`absolute w-80 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md shadow-2xl overflow-hidden flex flex-col will-change-transform ${onClick ? "cursor-pointer" : ""}`}
         style={{
           opacity: 0,
+          pointerEvents: "none",
           top: "50%",
           left: "50%",
           height: CARD_H,
