@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-04 — Milestone v2.0 started
+Phase: 07-gps-streams-infrastructure
+Plan: 01 of N (in progress)
+Status: Executing phase 07
+Last activity: 2026-03-13 — Phase 07 Plan 01 complete (ActivityStream model + streams_service)
 
 Progress: [██████████] 100%
 
@@ -36,12 +36,15 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-02-28
-Stopped at: All 6 phases complete. PR #1 open for review.
-Resume: Project is feature-complete. Potential follow-ups: cloud hosting, CI/CD, code splitting.
+Last session: 2026-03-13
+Stopped at: Completed 07-01-PLAN.md: ActivityStream model and streams_service
+Resume: Phase 07 Plan 01 complete. Next: 07-02 (streams API endpoint).
 
 ## Key Decisions (recent)
 
+- [07-01]: activity_id as primary key for ActivityStream enables session.merge() upsert
+- [07-01]: fetched_at sentinel field — non-null means fetch was attempted (even if no GPS data)
+- [07-01]: sa_column=Column(JSON, nullable=True) for explicit nullable JSON columns
 - [06]: Multi-stage Dockerfile — Node 22 alpine + Python 3.13 slim with uv
 - [06]: Single container serves both API and built React SPA
 - [06]: Conditional CORS — only enabled in development (Vite dev server)
