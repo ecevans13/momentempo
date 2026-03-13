@@ -21,7 +21,7 @@ export default function ActivityProcession({
   const viewportRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(activities.map(() => createRef<HTMLDivElement>()));
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   const prefersReduced =
     typeof window !== "undefined" &&
@@ -39,6 +39,7 @@ export default function ActivityProcession({
           end: "bottom bottom",
           scrub: 1,
           pin: viewportRef.current,
+          onUpdate: (self) => setScrollProgress(self.progress),
         },
       });
 
@@ -84,10 +85,8 @@ export default function ActivityProcession({
               }
               gsap.set(el, { opacity: alpha });
 
-              // Track focused card (visible and near z:0)
-              if (progress > 0.3 && progress < 0.5) {
-                setCurrentIndex(i);
-              }
+              // Enable clicks only when card is visible and near center
+              el.style.pointerEvents = progress > 0.15 && progress < 0.65 ? "auto" : "none";
             },
           },
           offset
@@ -158,19 +157,40 @@ export default function ActivityProcession({
           />
         ))}
 
-        {/* Progress dots */}
-        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
-          {activities.map((_, i) => (
-            <div
-              key={i}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                i === currentIndex
-                  ? "bg-indigo-400 scale-125"
-                  : "bg-gray-600"
-              }`}
-            />
-          ))}
-        </div>
+        {/* Scroll progress: overhead oval track, fills counterclockwise from 400m start */}
+        {(() => {
+          // Ellipse rx=16, ry=12 — Ramanujan perimeter ≈ 88.4
+          const trackPerimeter = 88.4;
+          const dashOffset = trackPerimeter * (1 - scrollProgress);
+          return (
+            <div className="absolute right-5 bottom-8 z-10">
+              <svg width="44" height="36" viewBox="0 0 44 36">
+                {/* Background track (thin, dim) */}
+                <ellipse
+                  cx="22" cy="18" rx="16" ry="12"
+                  fill="none"
+                  stroke="#374151"
+                  strokeWidth="2.5"
+                />
+                {/* Progress fill: bold stroke, counterclockwise from bottom (400m start) */}
+                <ellipse
+                  cx="22" cy="18" rx="16" ry="12"
+                  fill="none"
+                  stroke="#818cf8"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray={trackPerimeter}
+                  strokeDashoffset={dashOffset}
+                  style={{
+                    transform: "rotate(-90deg) scaleX(-1)",
+                    transformOrigin: "22px 18px",
+                    transition: "stroke-dashoffset 0.1s ease-out",
+                  }}
+                />
+              </svg>
+            </div>
+          );
+        })()}
 
         {/* CTA overlaid at center, fades in at end */}
         <div
