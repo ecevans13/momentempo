@@ -161,7 +161,7 @@ export default function ActivityProcession({
         {(() => {
           // Stadium shape: two 20px straights + two semicircles (r=10)
           // Path drawn counterclockwise from bottom-right (start/finish line)
-          const trackPath = "M34,26 H14 A10,10 0 0,0 14,6 H34 A10,10 0 0,0 34,26";
+          const trackPath = "M34,26 H14 A10,10 0 0,1 14,6 H34 A10,10 0 0,1 34,26";
           const trackLength = 20 + Math.PI * 10 + 20 + Math.PI * 10; // ≈ 102.8
           const dashOffset = trackLength * (1 - scrollProgress);
           return (
