@@ -10,15 +10,15 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 07-gps-streams-infrastructure
-Plan: 01 of N (in progress)
-Status: Executing phase 07
-Last activity: 2026-03-13 — Phase 07 Plan 01 complete (ActivityStream model + streams_service)
+Plan: 02 of 02 (complete)
+Status: Phase 07 complete
+Last activity: 2026-03-13 — Phase 07 Plan 02 complete (streams API endpoint + integration tests)
 
 Progress: [██████████] 100%
 
 ## Test Summary
 
-- 79 backend tests passing
+- 127 backend tests passing
 - Frontend builds clean (TypeScript + Vite)
 - Docker image builds and runs successfully
 - Branch: phase-1-foundation-and-auth
@@ -37,11 +37,12 @@ Progress: [██████████] 100%
 ## Session Continuity
 
 Last session: 2026-03-13
-Stopped at: Completed 07-01-PLAN.md: ActivityStream model and streams_service
-Resume: Phase 07 Plan 01 complete. Next: 07-02 (streams API endpoint).
+Stopped at: Completed 07-02-PLAN.md: streams API endpoint and integration tests
+Resume: Phase 07 complete. GET /api/activity/{id}/streams endpoint live. Ready for Phase 8 (route map rendering).
 
 ## Key Decisions (recent)
 
+- [07-02]: Boolean flags (has_gps/has_altitude/has_heartrate) in stream response for conditional frontend rendering
 - [07-01]: activity_id as primary key for ActivityStream enables session.merge() upsert
 - [07-01]: fetched_at sentinel field — non-null means fetch was attempted (even if no GPS data)
 - [07-01]: sa_column=Column(JSON, nullable=True) for explicit nullable JSON columns
