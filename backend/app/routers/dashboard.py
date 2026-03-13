@@ -49,6 +49,56 @@ def _apply_sport_filter(stmt, sport_type: str | None):
     return stmt
 
 
+@router.get("/landing/recent")
+def landing_recent(request: Request):
+    """Landing page data: 10 most recent activities with polylines + lifetime stats."""
+    with _get_session(request) as session:
+        # Lifetime aggregate stats
+        agg = select(
+            func.count(Activity.id),
+            func.sum(Activity.distance),
+            func.sum(Activity.moving_time),
+            func.sum(Activity.total_elevation_gain),
+        )
+        count, total_distance, total_moving_time, total_elevation = session.exec(agg).one()
+
+        # 10 most recent activities with polyline
+        stmt = (
+            select(Activity)
+            .order_by(col(Activity.start_date_epoch).desc())
+            .limit(10)
+        )
+        activities = session.exec(stmt).all()
+
+    return {
+        "lifetime_stats": {
+            "total_activities": count or 0,
+            "total_distance_m": total_distance or 0.0,
+            "total_moving_time_s": total_moving_time or 0,
+            "total_elevation_gain_m": total_elevation or 0.0,
+        },
+        "recent_activities": [
+            {
+                "id": a.id,
+                "name": a.name,
+                "sport_type": a.sport_type,
+                "start_date": a.start_date,
+                "start_date_local": a.start_date_local,
+                "distance": a.distance,
+                "moving_time": a.moving_time,
+                "total_elevation_gain": a.total_elevation_gain,
+                "average_speed": a.average_speed,
+                "has_heartrate": a.has_heartrate,
+                "average_heartrate": a.average_heartrate,
+                "suffer_score": a.suffer_score,
+                "kudos_count": a.kudos_count,
+                "summary_polyline": a.summary_polyline,
+            }
+            for a in activities
+        ],
+    }
+
+
 @router.get("/dashboard/summary")
 def dashboard_summary(
     request: Request,

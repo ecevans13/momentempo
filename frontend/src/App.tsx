@@ -8,7 +8,9 @@ const DashboardView = lazy(() => import("./views/DashboardView"));
 const InsightsView = lazy(() => import("./views/InsightsView"));
 const GearView = lazy(() => import("./views/GearView"));
 const TrophyView = lazy(() => import("./views/TrophyView"));
+const LandingView = lazy(() => import("./views/LandingView"));
 
+type View = "landing" | "app";
 type Tab = "dashboard" | "insights" | "gear" | "trophies";
 
 const TABS: { value: Tab; label: string }[] = [
@@ -29,6 +31,7 @@ function TabSpinner() {
 export default function App() {
   const { theme, toggleTheme } = useTheme();
   const [firstName, setFirstName] = useState<string | null>(null);
+  const [view, setView] = useState<View>("landing");
   const [tab, setTab] = useState<Tab>("dashboard");
 
   useEffect(() => {
@@ -42,9 +45,30 @@ export default function App() {
       .catch(() => {});
   }, []);
 
+  // Landing view: full-bleed, no header/tabs
+  if (view === "landing") {
+    return (
+      <div className="min-h-screen bg-black text-gray-100">
+        <ErrorBoundary>
+          <Suspense fallback={<TabSpinner />}>
+            <LandingView
+              firstName={firstName}
+              onEnterApp={() => setView("app")}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100">
-      <Header theme={theme} toggleTheme={toggleTheme} firstName={firstName} />
+      <Header
+        theme={theme}
+        toggleTheme={toggleTheme}
+        firstName={firstName}
+        onLogoClick={() => setView("landing")}
+      />
 
       {/* Tab navigation */}
       <div className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-black sticky top-0 z-10">

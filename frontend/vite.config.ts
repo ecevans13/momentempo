@@ -14,6 +14,9 @@ export default defineConfig({
           if (id.includes("node_modules/leaflet") || id.includes("node_modules/react-leaflet")) {
             return "leaflet";
           }
+          if (id.includes("node_modules/gsap")) {
+            return "gsap";
+          }
           if (id.includes("node_modules/react") || id.includes("node_modules/scheduler")) {
             return "vendor";
           }

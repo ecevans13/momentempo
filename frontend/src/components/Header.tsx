@@ -5,9 +5,10 @@ interface HeaderProps {
   theme: "dark" | "light";
   toggleTheme: () => void;
   firstName: string | null;
+  onLogoClick?: () => void;
 }
 
-export default function Header({ theme, toggleTheme, firstName }: HeaderProps) {
+export default function Header({ theme, toggleTheme, firstName, onLogoClick }: HeaderProps) {
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
@@ -31,9 +32,12 @@ export default function Header({ theme, toggleTheme, firstName }: HeaderProps) {
 
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800/50 bg-white dark:bg-black">
-      <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      <button
+        onClick={onLogoClick}
+        className="text-xl font-bold tracking-tight text-gray-900 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+      >
         {firstName ? `${firstName}'s Journey` : "Your Journey"}
-      </h1>
+      </button>
       <div className="flex items-center gap-3">
         {syncMsg && (
           <span className="text-sm text-gray-400">{syncMsg}</span>
