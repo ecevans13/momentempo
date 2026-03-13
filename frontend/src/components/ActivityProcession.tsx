@@ -1,7 +1,7 @@
-import { useRef, useEffect, createRef } from "react";
+import { useRef, useEffect, useState, createRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import ActivityCard3D from "./ActivityCard3D";
+import ActivityCard3D, { CARD_H } from "./ActivityCard3D";
 import type { LandingActivity } from "../api/types";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -9,16 +9,19 @@ gsap.registerPlugin(ScrollTrigger);
 interface ActivityProcessionProps {
   activities: LandingActivity[];
   onViewAll: () => void;
+  onSelectActivity: (id: number) => void;
 }
 
 export default function ActivityProcession({
   activities,
   onViewAll,
+  onSelectActivity,
 }: ActivityProcessionProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(activities.map(() => createRef<HTMLDivElement>()));
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const prefersReduced =
     typeof window !== "undefined" &&
@@ -39,13 +42,11 @@ export default function ActivityProcession({
         },
       });
 
-      // One continuous motion per card, no stops.
-      // Next card enters when previous is ~40% through its journey.
-      const flightDur = 3;   // total time each card travels from back to past viewer
-      const stagger = 1.2;   // next card starts partway through previous card's flight
+      const flightDur = 3;
+      const stagger = 1.2;
 
       // Alternating x positions (px offset from center)
-      const xPositions = [-160, 160];
+      const xPositions = [-180, 180];
 
       cardRefs.current.forEach((ref, i) => {
         const el = ref.current;
@@ -70,10 +71,9 @@ export default function ActivityProcession({
             opacity: 0,
             duration: flightDur,
             ease: "none",
-            // Keyframe opacity: fade in as it approaches, fade out as it passes
             onUpdate: function () {
               const progress = this.progress();
-              // 0..0.25: fade in, 0.25..0.65: fully visible, 0.65..1: fade out
+              // Opacity keyframes
               let alpha: number;
               if (progress < 0.2) {
                 alpha = progress / 0.2;
@@ -83,6 +83,11 @@ export default function ActivityProcession({
                 alpha = 1 - (progress - 0.6) / 0.4;
               }
               gsap.set(el, { opacity: alpha });
+
+              // Track focused card (visible and near z:0)
+              if (progress > 0.3 && progress < 0.5) {
+                setCurrentIndex(i);
+              }
             },
           },
           offset
@@ -110,8 +115,12 @@ export default function ActivityProcession({
       <section className="bg-black px-6 py-16">
         <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6">
           {activities.map((a) => (
-            <div key={a.id} className="relative h-80">
-              <ActivityCard3D activity={a} ref={null} />
+            <div key={a.id} className="relative" style={{ height: CARD_H }}>
+              <ActivityCard3D
+                activity={a}
+                ref={null}
+                onClick={() => onSelectActivity(a.id)}
+              />
             </div>
           ))}
         </div>
@@ -145,8 +154,23 @@ export default function ActivityProcession({
             key={activity.id}
             activity={activity}
             ref={cardRefs.current[i]}
+            onClick={() => onSelectActivity(activity.id)}
           />
         ))}
+
+        {/* Progress dots */}
+        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
+          {activities.map((_, i) => (
+            <div
+              key={i}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                i === currentIndex
+                  ? "bg-indigo-400 scale-125"
+                  : "bg-gray-600"
+              }`}
+            />
+          ))}
+        </div>
 
         {/* CTA overlaid at center, fades in at end */}
         <div

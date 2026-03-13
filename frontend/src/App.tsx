@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect, useCallback } from "react";
 import { useTheme } from "./hooks/useTheme";
 import Header from "./components/Header";
 import Layout from "./components/Layout";
@@ -33,6 +33,7 @@ export default function App() {
   const [firstName, setFirstName] = useState<string | null>(null);
   const [view, setView] = useState<View>("landing");
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [appVisible, setAppVisible] = useState(false);
 
   useEffect(() => {
     fetch("/api/health")
@@ -45,6 +46,23 @@ export default function App() {
       .catch(() => {});
   }, []);
 
+  const handleEnterApp = useCallback((_selectedActivityId?: number) => {
+    setView("app");
+    // Fade in the app view
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setAppVisible(true));
+    });
+    window.scrollTo(0, 0);
+  }, []);
+
+  const handleReturnToLanding = useCallback(() => {
+    setAppVisible(false);
+    setTimeout(() => {
+      setView("landing");
+      window.scrollTo(0, 0);
+    }, 300);
+  }, []);
+
   // Landing view: full-bleed, no header/tabs
   if (view === "landing") {
     return (
@@ -53,7 +71,7 @@ export default function App() {
           <Suspense fallback={<TabSpinner />}>
             <LandingView
               firstName={firstName}
-              onEnterApp={() => setView("app")}
+              onEnterApp={handleEnterApp}
             />
           </Suspense>
         </ErrorBoundary>
@@ -62,12 +80,12 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100">
+    <div className={`min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100 transition-opacity duration-300 ${appVisible ? "opacity-100" : "opacity-0"}`}>
       <Header
         theme={theme}
         toggleTheme={toggleTheme}
         firstName={firstName}
-        onLogoClick={() => setView("landing")}
+        onLogoClick={handleReturnToLanding}
       />
 
       {/* Tab navigation */}

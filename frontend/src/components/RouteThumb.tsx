@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { decodePolyline } from "../utils/polyline";
 
 interface RouteThumbProps {
@@ -32,7 +32,6 @@ function fitZoom(
   minLat: number, maxLat: number, minLng: number, maxLng: number,
   width: number, height: number,
 ): number {
-  // Find zoom where the padded route bounds fit within the canvas
   for (let z = 18; z >= 1; z--) {
     const topLeft = latLngToTile(maxLat, minLng, z);
     const bottomRight = latLngToTile(minLat, maxLng, z);
@@ -97,12 +96,15 @@ function drawRoute(
 
 export default function RouteThumb({ polyline, width = 200, height = 200 }: RouteThumbProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [tilesLoaded, setTilesLoaded] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    setTilesLoaded(false);
 
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
@@ -188,18 +190,25 @@ export default function RouteThumb({ polyline, width = 200, height = 200 }: Rout
 
       // Redraw route on top of tiles
       drawRoute(ctx, points, zoom, centerTile.x, centerTile.y, width, height);
+      setTilesLoaded(true);
     });
 
     return () => { cancelled = true; };
   }, [polyline, width, height]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={width}
-      height={height}
-      style={{ width, height }}
-      className="block"
-    />
+    <div className="relative" style={{ width, height }}>
+      {/* Shimmer overlay while tiles load */}
+      {!tilesLoaded && (
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[shimmer_1.5s_infinite] rounded-lg" />
+      )}
+      <canvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        style={{ width, height }}
+        className="block"
+      />
+    </div>
   );
 }
