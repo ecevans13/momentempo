@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { fetchActivityDetail, fetchActivityZones } from "../api/client";
-import type { ActivityDetailResponse, ZonesResponse } from "../api/types";
+import { fetchActivityDetail, fetchActivityZones, fetchActivityStreams } from "../api/client";
+import type { ActivityDetailResponse, ZonesResponse, StreamsResponse } from "../api/types";
 import {
   formatDistance,
   formatDuration,
@@ -13,6 +13,7 @@ import HRZoneChart from "./HRZoneChart";
 import HRDriftChart from "./HRDriftChart";
 import ElevationProfile from "./ElevationProfile";
 import RouteReplay from "./RouteReplay";
+import PaceMap from "./PaceMap";
 
 const RUN_TYPES = ["Run", "TrailRun", "VirtualRun", "Treadmill"];
 
@@ -24,6 +25,7 @@ interface ActivityDetailProps {
 export default function ActivityDetail({ activityId, onBack }: ActivityDetailProps) {
   const [detail, setDetail] = useState<ActivityDetailResponse | null>(null);
   const [zones, setZones] = useState<ZonesResponse | null>(null);
+  const [streams, setStreams] = useState<StreamsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,10 +36,12 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
     Promise.all([
       fetchActivityDetail(activityId),
       fetchActivityZones(activityId).catch(() => ({ has_zones: false, zones: [] }) as ZonesResponse),
+      fetchActivityStreams(activityId).catch(() => null),
     ])
-      .then(([detailData, zonesData]) => {
+      .then(([detailData, zonesData, streamsData]) => {
         setDetail(detailData);
         setZones(zonesData);
+        setStreams(streamsData);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -76,6 +80,8 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
   const splits = detail.splits_km.length > 0 ? detail.splits_km : detail.splits_mi;
   const splitsWithHR = splits.filter((s) => s.average_heartrate !== null);
   const hasElevation = splits.some((s) => s.elevation_difference !== 0);
+
+  const hasGPS = streams?.has_gps && streams.latlng && streams.velocity_smooth;
 
   return (
     <div className="space-y-6">
@@ -128,8 +134,15 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
         )}
       </div>
 
-      {/* Route Replay */}
-      {detail.summary_polyline && (
+      {/* Route: PaceMap (GPS) or RouteReplay fallback */}
+      {hasGPS ? (
+        <Section title="Route">
+          <PaceMap
+            latlng={streams!.latlng!}
+            velocity={streams!.velocity_smooth!}
+          />
+        </Section>
+      ) : detail.summary_polyline ? (
         <Section title="Route Replay">
           <RouteReplay
             polyline={detail.summary_polyline}
@@ -137,7 +150,7 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
             totalTime={detail.moving_time}
           />
         </Section>
-      )}
+      ) : null}
 
       {/* Splits */}
       {(detail.splits_km.length > 0 || detail.splits_mi.length > 0) && (
@@ -161,9 +174,13 @@ export default function ActivityDetail({ activityId, onBack }: ActivityDetailPro
       )}
 
       {/* Elevation Profile */}
-      {hasElevation && splits.length > 1 && (
+      {(hasElevation || streams?.has_altitude) && (
         <Section title="Elevation Profile">
-          <ElevationProfile splits={splits} />
+          <ElevationProfile
+            splits={splits}
+            gpsAltitude={streams?.altitude}
+            gpsDistance={streams?.distance}
+          />
         </Section>
       )}
 
