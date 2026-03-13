@@ -4,6 +4,7 @@ import type {
   ActivitiesResponse,
   ActivityDetailResponse,
   ZonesResponse,
+  StreamsResponse,
   SyncStatusResponse,
   SyncTriggerResponse,
   HeatmapResponse,
@@ -79,6 +80,10 @@ export function fetchActivityDetail(id: number): Promise<ActivityDetailResponse>
 
 export function fetchActivityZones(id: number): Promise<ZonesResponse> {
   return fetchJSON(`/api/activity/${id}/zones`);
+}
+
+export function fetchActivityStreams(id: number): Promise<StreamsResponse> {
+  return fetchJSON(`/api/activity/${id}/streams`);
 }
 
 export function fetchGear(): Promise<{ gear: import("./types").GearItem[] }> {

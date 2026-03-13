@@ -1,21 +1,11 @@
 import { useRef, useEffect, useState } from "react";
 import { decodePolyline } from "../utils/polyline";
+import { downsample } from "../utils/downsample";
 
 interface RouteThumbProps {
   polyline: string;
   width?: number;
   height?: number;
-}
-
-function downsample(points: [number, number][], target: number): [number, number][] {
-  if (points.length <= target) return points;
-  const step = points.length / target;
-  const result: [number, number][] = [];
-  for (let i = 0; i < target; i++) {
-    result.push(points[Math.floor(i * step)]);
-  }
-  result.push(points[points.length - 1]);
-  return result;
 }
 
 // --- Slippy map math ---

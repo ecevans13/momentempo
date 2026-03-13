@@ -298,6 +298,19 @@ export interface HealthHistoryResponse {
   history: Record<string, HealthHistoryPoint[]>;
 }
 
+export interface StreamsResponse {
+  activity_id: number;
+  has_gps: boolean;
+  has_altitude: boolean;
+  has_heartrate: boolean;
+  latlng: [number, number][] | null;
+  altitude: number[] | null;
+  heartrate: number[] | null;
+  velocity_smooth: number[] | null;
+  time: number[] | null;
+  distance: number[] | null;
+}
+
 // Activity detail extension
 export interface ActivityDetailResponse {
   id: number;
