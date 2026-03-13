@@ -18,6 +18,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Activity Drill-Down** - Per-activity splits, HR charts, and zone breakdown (completed 2026-02-28)
 - [x] **Phase 5: Gear Gallery and Trophy Case** - Gear cards with auto-fetched images, PRs, milestones, and achievement timeline (completed 2026-02-28)
 - [x] **Phase 6: Deployment** - Docker deployment with multi-stage build, SPA serving, production config (completed 2026-02-28)
+- [ ] **Phase 7: GPS Streams Infrastructure** - Lazy-fetch and cache GPS stream data (coordinates, altitude, HR, velocity) from Strava on first activity detail open
+- [ ] **Phase 8: Enhanced Activity Drill-Down** - Route map with pace color overlay and smooth GPS-based elevation profile
+- [ ] **Phase 9: Best Efforts Timeline** - Personal best progression chart per standard distance over time
+- [ ] **Phase 10: Workout Projector** - Input training plans and see projected CTL/ATL/TSB fitness curves with estimated VDOT
 
 ## Phase Details
 
@@ -93,10 +97,56 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. All dashboard features (metrics, trends, drill-down, gear, trophy case) work correctly in production
 **Plans**: TBD
 
+### Phase 7: GPS Streams Infrastructure
+**Goal**: GPS stream data (coordinates, altitude, heart rate, velocity) is lazily fetched from Strava on first activity detail open and cached in SQLite, so subsequent views load instantly without API calls.
+**Depends on**: Phase 6
+**Requirements**: STRM-01
+**Success Criteria** (what must be TRUE):
+  1. Opening an activity detail for the first time fetches its GPS streams from the Strava API and stores them in SQLite
+  2. Opening the same activity detail again loads streams from SQLite without making any Strava API calls
+  3. Activities without GPS data (e.g., weight training) are handled gracefully — no error, no API call attempted
+  4. Stream data includes at minimum: lat/lng coordinates, altitude, heart rate, and velocity arrays
+  5. The stream fetch respects existing Strava rate limits (reuses the rate-limit-aware client from Phase 2)
+**Plans**: TBD
+
+### Phase 8: Enhanced Activity Drill-Down
+**Goal**: The activity detail view shows an interactive route map colored by pace and a smooth GPS-based elevation profile, transforming the drill-down from numbers-only to a visual story of each run.
+**Depends on**: Phase 7
+**Requirements**: DRLL-03, DRLL-04
+**Success Criteria** (what must be TRUE):
+  1. Activities with GPS data show a route map colored by pace (green=fast, red=slow, normalized per activity)
+  2. Activities with altitude data show a smooth elevation profile chart derived from GPS altitude stream
+  3. Activities without GPS data still display the existing splits/HR view without errors
+  4. The elevation profile replaces the splits-based elevation approximation with actual GPS altitude data
+**Plans**: TBD
+
+### Phase 9: Best Efforts Timeline
+**Goal**: The dashboard includes a best efforts progression chart showing personal best times per standard distance over time, so the user can see their improvement trajectory.
+**Depends on**: Phase 6
+**Requirements**: DASH-06
+**Success Criteria** (what must be TRUE):
+  1. User sees a best efforts progression chart on the dashboard showing PR times per standard distance
+  2. Chart includes standard distances: 1mi, 5K, 10K, half marathon, marathon
+  3. Only distances with 2+ recorded efforts are rendered (distances with <2 efforts are omitted)
+  4. Chart shows time progression (x-axis: date, y-axis: time) so improvement trends are visible
+**Plans**: TBD
+
+### Phase 10: Workout Projector
+**Goal**: The user can input a structured training plan and see projected fitness curves (CTL/ATL/TSB) and estimated VDOT, helping them understand the likely impact of planned training.
+**Depends on**: Phase 6
+**Requirements**: PROJ-01, PROJ-02, PROJ-03, PROJ-04
+**Success Criteria** (what must be TRUE):
+  1. User can input a training plan specifying weekly distance, intensity level, and number of weeks
+  2. User sees projected CTL/ATL/TSB fitness curves extending from current fitness based on the plan
+  3. User sees estimated VDOT range at end of plan period (conditional on sufficient HR data)
+  4. Projected values are shown with dashed lines, ±10% uncertainty band, and estimation disclaimer
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+(Phases 9 and 10 depend only on Phase 6, so could run in parallel with 7/8)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -106,3 +156,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Activity Drill-Down | Complete | Complete | 2026-02-28 |
 | 5. Gear Gallery and Trophy Case | Complete | Complete | 2026-02-28 |
 | 6. Deployment | Complete | Complete | 2026-02-28 |
+| 7. GPS Streams Infrastructure | 0 | Not Started | — |
+| 8. Enhanced Activity Drill-Down | 0 | Not Started | — |
+| 9. Best Efforts Timeline | 0 | Not Started | — |
+| 10. Workout Projector | 0 | Not Started | — |
