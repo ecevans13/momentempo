@@ -157,35 +157,28 @@ export default function ActivityProcession({
           />
         ))}
 
-        {/* Scroll progress: overhead oval track, fills counterclockwise from 400m start */}
+        {/* Scroll progress: overhead stadium track, fills counterclockwise from 400m start */}
         {(() => {
-          // Ellipse rx=16, ry=12 — Ramanujan perimeter ≈ 88.4
-          const trackPerimeter = 88.4;
-          const dashOffset = trackPerimeter * (1 - scrollProgress);
+          // Stadium shape: two 20px straights + two semicircles (r=10)
+          // Path drawn counterclockwise from bottom-right (start/finish line)
+          const trackPath = "M34,26 H14 A10,10 0 0,0 14,6 H34 A10,10 0 0,0 34,26";
+          const trackLength = 20 + Math.PI * 10 + 20 + Math.PI * 10; // ≈ 102.8
+          const dashOffset = trackLength * (1 - scrollProgress);
           return (
             <div className="absolute right-5 bottom-8 z-10">
-              <svg width="44" height="36" viewBox="0 0 44 36">
-                {/* Background track (thin, dim) */}
-                <ellipse
-                  cx="22" cy="18" rx="16" ry="12"
-                  fill="none"
-                  stroke="#374151"
-                  strokeWidth="2.5"
-                />
-                {/* Progress fill: bold stroke, counterclockwise from bottom (400m start) */}
-                <ellipse
-                  cx="22" cy="18" rx="16" ry="12"
+              <svg width="48" height="32" viewBox="0 0 48 32">
+                {/* Background track */}
+                <path d={trackPath} fill="none" stroke="#374151" strokeWidth="2.5" />
+                {/* Progress fill tracing the path counterclockwise */}
+                <path
+                  d={trackPath}
                   fill="none"
                   stroke="#818cf8"
                   strokeWidth="4"
                   strokeLinecap="round"
-                  strokeDasharray={trackPerimeter}
+                  strokeDasharray={trackLength}
                   strokeDashoffset={dashOffset}
-                  style={{
-                    transform: "rotate(-90deg) scaleX(-1)",
-                    transformOrigin: "22px 18px",
-                    transition: "stroke-dashoffset 0.1s ease-out",
-                  }}
+                  style={{ transition: "stroke-dashoffset 0.1s ease-out" }}
                 />
               </svg>
             </div>
