@@ -50,6 +50,7 @@ export default function ElevationProfile({ splits, gpsAltitude, gpsDistance }: E
           <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
           <XAxis
             dataKey="distance"
+            tickCount={6}
             tick={{ fontSize: 12 }}
             tickFormatter={(v: number) => `${v.toFixed(1)} mi`}
             label={{ value: "Distance", position: "insideBottomRight", offset: -4, fontSize: 12 }}
