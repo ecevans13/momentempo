@@ -1,6 +1,7 @@
 import { useState } from "react";
 import MetricCards from "../components/MetricCards";
 import TrendChart from "../components/TrendChart";
+import BestEffortsTimeline from "../components/BestEffortsTimeline";
 import ActivityFeed from "../components/ActivityFeed";
 import ActivityDetail from "../components/ActivityDetail";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -30,6 +31,7 @@ export default function DashboardView() {
       </div>
       <ErrorBoundary><MetricCards /></ErrorBoundary>
       <ErrorBoundary><TrendChart sportType={sportOrUndefined} /></ErrorBoundary>
+      <ErrorBoundary><BestEffortsTimeline /></ErrorBoundary>
       <ErrorBoundary>
         <ActivityFeed sportType={sportOrUndefined} onSelectActivity={setSelectedActivityId} />
       </ErrorBoundary>

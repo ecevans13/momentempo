@@ -17,6 +17,7 @@ import type {
   HealthImportResponse,
   HealthSummaryResponse,
   LandingResponse,
+  BestEffortsProgressionResponse,
   Period,
   Metric,
   Granularity,
@@ -118,6 +119,10 @@ export function deleteMilestone(id: number): Promise<void> {
 
 export function fetchTimeline(): Promise<{ events: import("./types").TimelineEvent[] }> {
   return fetchJSON("/api/trophies/timeline");
+}
+
+export function fetchBestEffortsProgression(): Promise<BestEffortsProgressionResponse> {
+  return fetchJSON("/api/trophies/best-efforts-progression");
 }
 
 export function fetchHeatmap(months: number = 12): Promise<HeatmapResponse> {

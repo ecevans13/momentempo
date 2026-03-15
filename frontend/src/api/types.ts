@@ -298,6 +298,17 @@ export interface HealthHistoryResponse {
   history: Record<string, HealthHistoryPoint[]>;
 }
 
+export interface EffortPoint {
+  date: string;
+  moving_time: number;
+  activity_id: number;
+  activity_name: string;
+}
+
+export interface BestEffortsProgressionResponse {
+  progression: Record<string, EffortPoint[]>;
+}
+
 export interface StreamsResponse {
   activity_id: number;
   has_gps: boolean;
