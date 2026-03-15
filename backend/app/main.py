@@ -129,6 +129,9 @@ if _FRONTEND_DIST.exists():
 
     @app.get("/{full_path:path}")
     async def serve_spa(request: Request, full_path: str):
-        """SPA catch-all: serve index.html for any non-API path."""
-        # Let API routes handle themselves (they're registered above this catch-all)
+        """SPA catch-all: serve static files if they exist, otherwise index.html."""
+        # Check if the requested path maps to a real file in dist/
+        file_path = _FRONTEND_DIST / full_path
+        if full_path and file_path.is_file():
+            return FileResponse(str(file_path))
         return FileResponse(str(_FRONTEND_DIST / "index.html"))

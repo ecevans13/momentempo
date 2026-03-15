@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Query, Request
 from sqlmodel import Session, col, func, select
 
-from ..models import Activity
+from ..models import Activity, BestEffort
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,27 @@ def landing_recent(request: Request):
         )
         count, total_distance, total_moving_time, total_elevation = session.exec(agg).one()
 
+        # Marquee stats
+        run_count_q = select(func.count(Activity.id)).where(
+            col(Activity.sport_type).in_(RUN_SPORT_TYPES)
+        )
+        total_runs = session.exec(run_count_q).one() or 0
+
+        kudos_q = select(func.sum(Activity.kudos_count))
+        total_kudos = session.exec(kudos_q).one() or 0
+
+        prs_q = select(func.sum(Activity.pr_count))
+        total_prs = session.exec(prs_q).one() or 0
+
+        sports_q = select(func.count(func.distinct(Activity.sport_type)))
+        distinct_sport_types = session.exec(sports_q).one() or 0
+
+        fastest_5k_q = select(func.min(BestEffort.moving_time)).where(
+            BestEffort.name == "5K",
+            col(BestEffort.pr_rank).isnot(None),
+        )
+        fastest_5k = session.exec(fastest_5k_q).one()
+
         # 10 most recent activities with polyline
         stmt = (
             select(Activity)
@@ -76,6 +97,11 @@ def landing_recent(request: Request):
             "total_distance_m": total_distance or 0.0,
             "total_moving_time_s": total_moving_time or 0,
             "total_elevation_gain_m": total_elevation or 0.0,
+            "total_runs": total_runs,
+            "total_kudos": total_kudos,
+            "total_prs": total_prs,
+            "distinct_sport_types": distinct_sport_types,
+            "fastest_5k_s": fastest_5k,
         },
         "recent_activities": [
             {
