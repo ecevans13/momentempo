@@ -52,7 +52,7 @@ Current milestone. 8 requirements across 4 categories.
 - [x] **DRLL-04**: User sees smooth GPS altitude-based elevation profile on activities with altitude data (replaces splits-based approximation)
 
 ### Dashboard (Enhanced)
-- [ ] **DASH-06**: User sees a best efforts progression timeline showing personal best times per standard distance (1mi, 5K, 10K, half marathon, marathon) over time — only rendered for distances with ≥2 recorded efforts
+- [x] **DASH-06**: User sees a best efforts progression timeline showing personal best times per standard distance (1mi, 5K, 10K, half marathon, marathon) over time — only rendered for distances with ≥2 recorded efforts
 
 ### Workout Projector
 - [ ] **PROJ-01**: User can input a structured training plan (weekly distance, intensity level, number of weeks)
@@ -111,7 +111,7 @@ Deferred beyond v2.
 | STRM-01 | Phase 7 | Complete |
 | DRLL-03 | Phase 8 | Complete |
 | DRLL-04 | Phase 8 | Complete |
-| DASH-06 | Phase 9 | Pending |
+| DASH-06 | Phase 9 | Complete |
 | PROJ-01 | Phase 10 | Pending |
 | PROJ-02 | Phase 10 | Pending |
 | PROJ-03 | Phase 10 | Pending |

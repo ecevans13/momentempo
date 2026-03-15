@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Deployment** - Docker deployment with multi-stage build, SPA serving, production config (completed 2026-02-28)
 - [x] **Phase 7: GPS Streams Infrastructure** - Lazy-fetch and cache GPS stream data (coordinates, altitude, HR, velocity) from Strava on first activity detail open (completed 2026-03-13)
 - [x] **Phase 8: Enhanced Activity Drill-Down** - Route map with pace color overlay and smooth GPS-based elevation profile (completed 2026-03-13)
-- [ ] **Phase 9: Best Efforts Timeline** - Personal best progression chart per standard distance over time
+- [x] **Phase 9: Best Efforts Timeline** - Personal best progression chart per standard distance over time (completed 2026-03-15)
 - [ ] **Phase 10: Workout Projector** - Input training plans and see projected CTL/ATL/TSB fitness curves with estimated VDOT
 
 ## Phase Details
@@ -161,5 +161,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Deployment | Complete | Complete | 2026-02-28 |
 | 7. GPS Streams Infrastructure | 2/2 | Complete    | 2026-03-13 |
 | 8. Enhanced Activity Drill-Down | 1/1 | Complete   | 2026-03-13 |
-| 9. Best Efforts Timeline | 0/1 | Not Started | — |
+| 9. Best Efforts Timeline | 1/1 | Complete   | 2026-03-15 |
 | 10. Workout Projector | 0 | Not Started | — |
