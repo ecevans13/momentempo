@@ -172,6 +172,139 @@ def test_timeline_with_best_efforts(client: TestClient, session: Session):
     assert five_k_pr["moving_time"] == 1200
 
 
+def test_best_efforts_progression_empty_db(client: TestClient):
+    """With no BestEffort rows, progression should be empty dict."""
+    response = client.get("/api/trophies/best-efforts-progression")
+    assert response.status_code == 200
+    data = response.json()
+    assert data == {"progression": {}}
+
+
+def test_best_efforts_progression_filters_single_effort(client: TestClient, session: Session):
+    """A distance with only 1 effort should not appear (requires >= 2)."""
+    _make_activity(session, id=1, distance=5000, moving_time=1500, name="5K Run")
+    session.add(BestEffort(
+        activity_id=1, activity_name="5K Run",
+        name="5k", distance=5000, moving_time=1200,
+        start_date="2026-01-10T08:00:00Z",
+    ))
+    session.commit()
+
+    response = client.get("/api/trophies/best-efforts-progression")
+    data = response.json()
+    assert data["progression"] == {}
+
+
+def test_best_efforts_progression_returns_multiple_efforts(client: TestClient, session: Session):
+    """3 efforts for 5K should all appear, sorted by date ascending."""
+    _make_activity(session, id=1, distance=5000, moving_time=1500, name="Run A",
+                   start_date="2026-01-10T08:00:00Z")
+    _make_activity(session, id=2, distance=5000, moving_time=1400, name="Run B",
+                   start_date="2026-02-10T08:00:00Z")
+    _make_activity(session, id=3, distance=5000, moving_time=1300, name="Run C",
+                   start_date="2026-03-10T08:00:00Z")
+
+    session.add(BestEffort(activity_id=1, activity_name="Run A", name="5k",
+                           distance=5000, moving_time=1500,
+                           start_date="2026-01-10T08:00:00Z"))
+    session.add(BestEffort(activity_id=2, activity_name="Run B", name="5k",
+                           distance=5000, moving_time=1400,
+                           start_date="2026-02-10T08:00:00Z"))
+    session.add(BestEffort(activity_id=3, activity_name="Run C", name="5k",
+                           distance=5000, moving_time=1300,
+                           start_date="2026-03-10T08:00:00Z"))
+    session.commit()
+
+    response = client.get("/api/trophies/best-efforts-progression")
+    data = response.json()
+    assert "5K" in data["progression"]
+    efforts = data["progression"]["5K"]
+    assert len(efforts) == 3
+    # Should be sorted by date ascending
+    assert efforts[0]["date"] == "2026-01-10"
+    assert efforts[1]["date"] == "2026-02-10"
+    assert efforts[2]["date"] == "2026-03-10"
+    assert efforts[2]["moving_time"] == 1300
+
+
+def test_best_efforts_progression_excludes_no_efforts_markers(client: TestClient, session: Session):
+    """_no_efforts marker rows (moving_time=0) must not appear in results."""
+    _make_activity(session, id=1, distance=5000, moving_time=1500, name="Run A",
+                   start_date="2026-01-10T08:00:00Z")
+    _make_activity(session, id=2, distance=5000, moving_time=1400, name="Run B",
+                   start_date="2026-02-10T08:00:00Z")
+    _make_activity(session, id=3, distance=3000, moving_time=900, name="Short Run",
+                   start_date="2025-12-01T08:00:00Z")
+
+    session.add(BestEffort(activity_id=1, activity_name="Run A", name="5k",
+                           distance=5000, moving_time=1500,
+                           start_date="2026-01-10T08:00:00Z"))
+    session.add(BestEffort(activity_id=2, activity_name="Run B", name="5k",
+                           distance=5000, moving_time=1400,
+                           start_date="2026-02-10T08:00:00Z"))
+    # Marker row — should be excluded by moving_time > 0 filter
+    session.add(BestEffort(activity_id=3, activity_name="Short Run", name="_no_efforts",
+                           distance=0, moving_time=0,
+                           start_date="2025-12-01T08:00:00Z"))
+    session.commit()
+
+    response = client.get("/api/trophies/best-efforts-progression")
+    data = response.json()
+    assert "5K" in data["progression"]
+    assert len(data["progression"]["5K"]) == 2
+    # The marker distance should not appear
+    assert "_no_efforts" not in data["progression"]
+
+
+def test_best_efforts_progression_multiple_distances(client: TestClient, session: Session):
+    """Both 5K and 1 Mile with 2+ efforts each should appear."""
+    _make_activity(session, id=1, distance=5000, moving_time=1500, name="5K Run 1",
+                   start_date="2026-01-10T08:00:00Z")
+    _make_activity(session, id=2, distance=5000, moving_time=1400, name="5K Run 2",
+                   start_date="2026-02-10T08:00:00Z")
+    _make_activity(session, id=3, distance=1700, moving_time=460, name="Mile Run 1",
+                   start_date="2026-01-20T08:00:00Z")
+    _make_activity(session, id=4, distance=1700, moving_time=440, name="Mile Run 2",
+                   start_date="2026-02-20T08:00:00Z")
+
+    session.add(BestEffort(activity_id=1, activity_name="5K Run 1", name="5k",
+                           distance=5000, moving_time=1500, start_date="2026-01-10T08:00:00Z"))
+    session.add(BestEffort(activity_id=2, activity_name="5K Run 2", name="5k",
+                           distance=5000, moving_time=1400, start_date="2026-02-10T08:00:00Z"))
+    session.add(BestEffort(activity_id=3, activity_name="Mile Run 1", name="1 mile",
+                           distance=1609, moving_time=460, start_date="2026-01-20T08:00:00Z"))
+    session.add(BestEffort(activity_id=4, activity_name="Mile Run 2", name="1 mile",
+                           distance=1609, moving_time=440, start_date="2026-02-20T08:00:00Z"))
+    session.commit()
+
+    response = client.get("/api/trophies/best-efforts-progression")
+    data = response.json()
+    assert "5K" in data["progression"]
+    assert "1 Mile" in data["progression"]
+    assert len(data["progression"]["5K"]) == 2
+    assert len(data["progression"]["1 Mile"]) == 2
+
+
+def test_best_efforts_progression_excludes_empty_start_date(client: TestClient, session: Session):
+    """Efforts with empty start_date must be excluded; distance with < 2 valid rows omitted."""
+    _make_activity(session, id=1, distance=5000, moving_time=1500, name="5K Run A",
+                   start_date="2026-01-10T08:00:00Z")
+    _make_activity(session, id=2, distance=5000, moving_time=1400, name="5K Run B",
+                   start_date="2026-02-10T08:00:00Z")
+
+    # One valid effort, one with empty start_date
+    session.add(BestEffort(activity_id=1, activity_name="5K Run A", name="5k",
+                           distance=5000, moving_time=1500, start_date="2026-01-10T08:00:00Z"))
+    session.add(BestEffort(activity_id=2, activity_name="5K Run B", name="5k",
+                           distance=5000, moving_time=1400, start_date=""))
+    session.commit()
+
+    response = client.get("/api/trophies/best-efforts-progression")
+    data = response.json()
+    # Only 1 valid effort for 5K, so it should not appear
+    assert data["progression"] == {}
+
+
 def test_timeline_combined(client: TestClient, session: Session):
     _make_activity(session, id=1, distance=5100, moving_time=1200,
                    start_date="2026-02-10T08:00:00Z", name="5K PR")

@@ -179,6 +179,41 @@ def delete_milestone(request: Request, milestone_id: int):
         session.commit()
 
 
+@router.get("/best-efforts-progression")
+def get_best_efforts_progression(request: Request):
+    """Return all best efforts grouped by standard distance, for progression charting.
+
+    Only distances with 2 or more qualifying efforts (moving_time > 0 and start_date set)
+    are included. Results per distance are sorted chronologically ascending.
+    """
+    with _get_session(request) as session:
+        progression: dict[str, list[dict]] = {}
+
+        for dist in PR_DISTANCES:
+            names_lower = dist["strava_names"]
+            stmt = (
+                select(BestEffort)
+                .where(func.lower(BestEffort.name).in_(names_lower))
+                .where(col(BestEffort.moving_time) > 0)
+                .where(col(BestEffort.start_date) != "")
+                .order_by(col(BestEffort.start_date).asc())
+            )
+            efforts = session.exec(stmt).all()
+
+            if len(efforts) >= 2:
+                progression[dist["name"]] = [
+                    {
+                        "date": e.start_date[:10],
+                        "moving_time": e.moving_time,
+                        "activity_id": e.activity_id,
+                        "activity_name": e.activity_name,
+                    }
+                    for e in efforts
+                ]
+
+        return {"progression": progression}
+
+
 @router.get("/timeline")
 def get_timeline(request: Request):
     """Combined timeline of PRs and milestones, sorted chronologically."""
