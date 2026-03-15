@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-03-13T19:09:34.566Z"
+status: in_progress
+last_updated: "2026-03-15T19:14:00.000Z"
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** See the story your training data tells — trends, progress, and projections — in one beautiful, personal dashboard.
-**Current focus:** Phase 08 — Enhanced Activity Drill-Down
+**Current focus:** Phase 09 — Best Efforts Timeline
 
 ## Current Position
 
-Phase: 08-enhanced-activity-drill-down
+Phase: 09-best-efforts-timeline
 Plan: 01 of 01 (complete)
-Status: Phase 08 Plan 01 complete
-Last activity: 2026-03-13 — Phase 08 Plan 01 complete (PaceMap and GPS elevation profile)
+Status: Phase 09 Plan 01 complete
+Last activity: 2026-03-15 — Phase 09 Plan 01 complete (Best Efforts Progression chart on Dashboard)
 
 Progress: [██████████] 100%
 
 ## Test Summary
 
-- 127 backend tests passing
+- 133 backend tests passing
 - Frontend builds clean (TypeScript + Vite)
 - Docker image builds and runs successfully
-- Branch: phase-1-foundation-and-auth
+- Branch: v3-landing-page
 
 ## What's Built
 
@@ -49,12 +49,16 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-03-13
-Stopped at: Completed 08-01-PLAN.md: PaceMap components and GPS elevation profile
-Resume: Phase 08 Plan 01 complete. Pace-colored route map and GPS-based elevation profile live in ActivityDetail.
+Last session: 2026-03-15
+Stopped at: Completed 09-01-PLAN.md: Best efforts progression chart on Dashboard
+Resume: Phase 09 Plan 01 complete. BestEffortsTimeline multi-series LineChart live on Dashboard between TrendChart and ActivityFeed.
 
 ## Key Decisions (recent)
 
+- [09-01]: Filter best efforts with moving_time > 0 AND start_date != "" to exclude _no_efforts markers
+- [09-01]: Minimum 2 efforts per distance required — single data points not meaningful for progression
+- [09-01]: Wide-format Map<date, {dist: time}> reshaping enables Recharts multi-series with connectNulls=false
+- [09-01]: Reversed Y-axis so faster times appear at top of chart (improvement reads as upward trajectory)
 - [08-01]: PaceMapLeaflet uses downsampleParallel to keep latlng/velocity aligned at 300 points
 - [08-01]: lerpColor linear RGB interpolation red (slow) to green (fast) for pace visualization
 - [08-01]: ElevationProfile GPS branch shows absolute altitude vs distance; splits fallback unchanged
