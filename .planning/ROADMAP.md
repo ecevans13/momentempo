@@ -130,7 +130,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Chart includes standard distances: 1mi, 5K, 10K, half marathon, marathon
   3. Only distances with 2+ recorded efforts are rendered (distances with <2 efforts are omitted)
   4. Chart shows time progression (x-axis: date, y-axis: time) so improvement trends are visible
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+  - [ ] 09-01-PLAN.md — Best efforts progression API endpoint and Recharts multi-series LineChart component
 
 ### Phase 10: Workout Projector
 **Goal**: The user can input a structured training plan and see projected fitness curves (CTL/ATL/TSB) and estimated VDOT, helping them understand the likely impact of planned training.
@@ -159,5 +161,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Deployment | Complete | Complete | 2026-02-28 |
 | 7. GPS Streams Infrastructure | 2/2 | Complete    | 2026-03-13 |
 | 8. Enhanced Activity Drill-Down | 1/1 | Complete   | 2026-03-13 |
-| 9. Best Efforts Timeline | 0 | Not Started | — |
+| 9. Best Efforts Timeline | 0/1 | Not Started | — |
 | 10. Workout Projector | 0 | Not Started | — |
