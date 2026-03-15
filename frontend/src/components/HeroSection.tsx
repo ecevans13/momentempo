@@ -2,6 +2,7 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import type { LifetimeStats } from "../api/types";
 import { formatDistance, formatDuration, formatElevation } from "../utils/format";
+import FloatingBrands from "./FloatingBrands";
 
 interface HeroSectionProps {
   firstName: string | null;
@@ -41,16 +42,18 @@ export default function HeroSection({ firstName, stats }: HeroSectionProps) {
       ref={containerRef}
       className="relative h-screen flex flex-col items-center justify-center bg-black px-6"
     >
+      <FloatingBrands />
+
       <h1
         data-hero-item
-        className="text-5xl sm:text-7xl font-bold tracking-tight text-white text-center"
+        className="relative z-10 text-5xl sm:text-7xl font-bold tracking-tight text-white text-center"
       >
         {firstName ? `${firstName}'s Journey` : "Your Journey"}
       </h1>
 
       <div
         data-hero-item
-        className="mt-10 flex flex-wrap justify-center gap-8 sm:gap-12"
+        className="relative z-10 mt-10 flex flex-wrap justify-center gap-8 sm:gap-12"
       >
         {statItems.map((s) => (
           <div key={s.label} className="text-center">

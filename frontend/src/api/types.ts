@@ -148,6 +148,11 @@ export interface LifetimeStats {
   total_distance_m: number;
   total_moving_time_s: number;
   total_elevation_gain_m: number;
+  total_runs: number;
+  total_kudos: number;
+  total_prs: number;
+  distinct_sport_types: number;
+  fastest_5k_s: number | null;
 }
 
 export interface LandingResponse {

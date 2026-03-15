@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import HeroSection from "../components/HeroSection";
+import StatsMarquee from "../components/StatsMarquee";
 import ActivityProcession from "../components/ActivityProcession";
 import { useLandingData } from "../hooks/useLanding";
 
@@ -68,6 +69,31 @@ export default function LandingView({ firstName, onEnterApp }: LandingViewProps)
       className={`bg-black transition-opacity duration-500 ${transitioning ? "opacity-0" : "opacity-100"}`}
     >
       <HeroSection firstName={firstName} stats={data.lifetime_stats} />
+      <StatsMarquee stats={data.lifetime_stats} />
+
+      {/* Transition into activities */}
+      <div className="bg-black py-20 sm:py-28 text-center">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+          Your Recent Activities
+        </h2>
+        <p className="text-gray-500 mb-8">
+          Scroll to explore your latest adventures
+        </p>
+        <svg
+          className="w-5 h-5 mx-auto text-gray-600 animate-bounce"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 14l-7 7m0 0l-7-7m7 7V3"
+          />
+        </svg>
+      </div>
+
       <ActivityProcession
         activities={data.recent_activities}
         onViewAll={() => handleTransition()}
