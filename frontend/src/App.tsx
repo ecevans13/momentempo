@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useCallback } from "react";
 import { useTheme } from "./hooks/useTheme";
+import { triggerSync } from "./api/client";
 import Header from "./components/Header";
 import Layout from "./components/Layout";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -44,6 +45,9 @@ export default function App() {
         }
       })
       .catch(() => {});
+
+    // Auto-sync from Strava on app load so latest activities are always available
+    triggerSync().catch(() => {});
   }, []);
 
   const handleEnterApp = useCallback((_selectedActivityId?: number) => {

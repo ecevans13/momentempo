@@ -32,8 +32,9 @@ export default function ElevationProfile({ splits, gpsAltitude, gpsDistance }: E
         ? (downsampleParallel([gpsDistance, gpsAltitude], MAX_POINTS) as [number[], number[]])
         : [gpsDistance, gpsAltitude];
 
+    const METERS_PER_MILE = 1609.344;
     const data = sampledDist.map((d, i) => ({
-      distance: d / 1000, // convert meters to km
+      distance: d / METERS_PER_MILE, // convert meters to miles
       elevation: Math.round(sampledAlt[i]),
     }));
 
@@ -50,7 +51,7 @@ export default function ElevationProfile({ splits, gpsAltitude, gpsDistance }: E
           <XAxis
             dataKey="distance"
             tick={{ fontSize: 12 }}
-            tickFormatter={(v: number) => `${v.toFixed(1)} km`}
+            tickFormatter={(v: number) => `${v.toFixed(1)} mi`}
             label={{ value: "Distance", position: "insideBottomRight", offset: -4, fontSize: 12 }}
           />
           <YAxis
@@ -61,7 +62,7 @@ export default function ElevationProfile({ splits, gpsAltitude, gpsDistance }: E
           />
           <Tooltip
             formatter={(value: number) => [formatElevation(value), "Elevation"]}
-            labelFormatter={(v: number) => `${v.toFixed(1)} km`}
+            labelFormatter={(v: number) => `${v.toFixed(1)} mi`}
             contentStyle={{ backgroundColor: "#1f2937", border: "none", borderRadius: 8, fontSize: 13 }}
             itemStyle={{ color: "#22c55e" }}
             labelStyle={{ color: "#9ca3af" }}
