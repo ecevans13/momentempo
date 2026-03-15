@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ErrorBoundary from "../components/ErrorBoundary";
+import BestEffortsTimeline from "../components/BestEffortsTimeline";
 import WeeklyReport from "../components/WeeklyReport";
 import TrainingHeatmap from "../components/TrainingHeatmap";
 import FitnessChart from "../components/FitnessChart";
@@ -32,6 +33,12 @@ export default function InsightsView() {
 
   return (
     <div className="space-y-6">
+      <ErrorBoundary>
+        <Section title="Best Efforts Progression">
+          <BestEffortsTimeline />
+        </Section>
+      </ErrorBoundary>
+
       <ErrorBoundary>
         <Section title="Weekly Report">
           <WeeklyReport />
