@@ -39,6 +39,18 @@ export default function HRDriftChart({ splits }: HRDriftChartProps) {
   const paceChange = Math.abs((avgPaceLast - avgPaceFirst) / avgPaceFirst) * 100;
   const driftDetected = hrChange > 5 && paceChange < 5;
 
+  // Widen Y-axis ranges so pace and HR lines spread apart visually
+  const paces = data.map((d) => d.pace);
+  const hrs = data.map((d) => d.hr);
+  const paceMin = Math.min(...paces);
+  const paceMax = Math.max(...paces);
+  const hrMin = Math.min(...hrs);
+  const hrMax = Math.max(...hrs);
+  const paceRange = paceMax - paceMin || 10;
+  const hrRange = hrMax - hrMin || 10;
+  const pacePad = paceRange * 0.6;
+  const hrPad = hrRange * 0.6;
+
   return (
     <div>
       <ResponsiveContainer width="100%" height={260}>
@@ -52,6 +64,7 @@ export default function HRDriftChart({ splits }: HRDriftChartProps) {
           <YAxis
             yAxisId="pace"
             reversed
+            domain={[paceMin - pacePad, paceMax + pacePad]}
             tickFormatter={(v: number) => formatPace(v)}
             tick={{ fontSize: 11 }}
             width={80}
@@ -60,9 +73,10 @@ export default function HRDriftChart({ splits }: HRDriftChartProps) {
           <YAxis
             yAxisId="hr"
             orientation="right"
+            domain={[hrMin - hrPad, hrMax + hrPad]}
             tick={{ fontSize: 11 }}
             width={52}
-            tickFormatter={(v: number) => `${v}`}
+            tickFormatter={(v: number) => `${Math.round(v)}`}
             label={{ value: "bpm", angle: 90, position: "insideRight", offset: 14, fontSize: 11 }}
           />
           <Tooltip
