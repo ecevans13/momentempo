@@ -4,6 +4,8 @@ import StatsMarquee from "../components/StatsMarquee";
 import ActivityProcession from "../components/ActivityProcession";
 import LandingHeatmap from "../components/LandingHeatmap";
 import LandingFitness from "../components/LandingFitness";
+import LandingTrophies from "../components/LandingTrophies";
+import LandingGear from "../components/LandingGear";
 import { useLandingData } from "../hooks/useLanding";
 
 interface LandingViewProps {
@@ -75,6 +77,8 @@ export default function LandingView({ firstName, onEnterApp }: LandingViewProps)
 
       <LandingHeatmap />
       <LandingFitness />
+      <LandingTrophies />
+      <LandingGear />
 
       {/* Transition into activities */}
       <div className="bg-black py-20 sm:py-28 text-center">
