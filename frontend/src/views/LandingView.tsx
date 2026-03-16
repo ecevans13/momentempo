@@ -2,6 +2,8 @@ import { useState, useCallback } from "react";
 import HeroSection from "../components/HeroSection";
 import StatsMarquee from "../components/StatsMarquee";
 import ActivityProcession from "../components/ActivityProcession";
+import LandingHeatmap from "../components/LandingHeatmap";
+import LandingFitness from "../components/LandingFitness";
 import { useLandingData } from "../hooks/useLanding";
 
 interface LandingViewProps {
@@ -70,6 +72,9 @@ export default function LandingView({ firstName, onEnterApp }: LandingViewProps)
     >
       <HeroSection firstName={firstName} stats={data.lifetime_stats} />
       <StatsMarquee stats={data.lifetime_stats} />
+
+      <LandingHeatmap />
+      <LandingFitness />
 
       {/* Transition into activities */}
       <div className="bg-black py-20 sm:py-28 text-center">
