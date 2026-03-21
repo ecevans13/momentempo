@@ -2,6 +2,10 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@utility font-display {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}
+
 body {
   @apply bg-white dark:bg-black;
 }

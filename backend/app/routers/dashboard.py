@@ -2,7 +2,7 @@
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Query, Request
 from sqlmodel import Session, col, func, select
@@ -16,11 +16,21 @@ router = APIRouter(prefix="/api", tags=["dashboard"])
 # Sport types considered "run-like" for pace calculations
 RUN_SPORT_TYPES = {"Run", "TrailRun", "VirtualRun", "Treadmill"}
 
-PERIOD_SECONDS = {
-    "week": 7 * 86400,
-    "month": 30 * 86400,
-    "year": 365 * 86400,
-}
+def _period_cutoff(period: str) -> int | None:
+    """Return epoch timestamp for the start of the current calendar week/month/year."""
+    if period == "all":
+        return None
+    now = datetime.now(timezone.utc)
+    if period == "week":
+        # Start of current calendar week (Monday 00:00 UTC)
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=now.weekday())
+    elif period == "month":
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    elif period == "year":
+        start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        return None
+    return int(start.timestamp())
 
 
 def _get_session(request: Request) -> Session:
@@ -131,10 +141,9 @@ def dashboard_summary(
     period: str = Query("month", pattern="^(week|month|year|all)$"),
 ):
     """Key metrics aggregated over a time period — uses SQL aggregates, no Python-side summing."""
-    cutoff: int | None = None
+    cutoff = _period_cutoff(period)
     period_start: str | None = None
-    if period != "all":
-        cutoff = int(time.time() - PERIOD_SECONDS[period])
+    if cutoff is not None:
         period_start = datetime.fromtimestamp(cutoff, tz=timezone.utc).isoformat()
 
     with _get_session(request) as session:

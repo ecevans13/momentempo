@@ -109,7 +109,7 @@ export default function LandingGear() {
         <div className="flex flex-col items-center px-6 max-w-6xl w-full">
           <h2
             ref={titleRef}
-            className="text-4xl sm:text-6xl font-bold text-white tracking-tight mb-12 opacity-0"
+            className="text-4xl sm:text-6xl font-bold text-white tracking-tight mb-12 opacity-0 font-display"
           >
             The Rotation
           </h2>

@@ -11,18 +11,3 @@ services:
       - SSL_VERIFY=false
     env_file:
       - .env
-
-  stravviz-v3:
-    build: .
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./data:/data
-    environment:
-      - ENVIRONMENT=production
-      - DATABASE_URL=sqlite:////data/stravviz.db
-      - SSL_VERIFY=false
-    env_file:
-      - .env
-    profiles:
-      - v3

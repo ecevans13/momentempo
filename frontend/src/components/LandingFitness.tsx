@@ -85,7 +85,7 @@ const SVG_H = 400;
 const PADDING = { top: 30, bottom: 55, left: 55, right: 30 };
 
 export default function LandingFitness() {
-  const { data, loading } = useFitness(12);
+  const { data, loading } = useFitness(120);
   const sectionRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
@@ -377,9 +377,9 @@ export default function LandingFitness() {
           {/* Title reveal */}
           <h2
             ref={titleRef}
-            className="mt-10 text-4xl sm:text-6xl font-bold text-white tracking-tight opacity-0"
+            className="mt-10 text-4xl sm:text-6xl font-bold text-white tracking-tight opacity-0 font-display"
           >
-            Building Fitness{chartData.trendUp ? ", One Day at a Time" : ""}
+            Built Fitness{chartData.trendUp ? ", One Day at a Time" : ""}
           </h2>
           <p
             ref={subtitleRef}

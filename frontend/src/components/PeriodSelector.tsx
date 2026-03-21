@@ -1,9 +1,9 @@
 import type { Period } from "../api/types";
 
 const PERIODS: { value: Period; label: string }[] = [
-  { value: "week", label: "Week" },
-  { value: "month", label: "Month" },
-  { value: "year", label: "Year" },
+  { value: "week", label: "This Week" },
+  { value: "month", label: "This Month" },
+  { value: "year", label: "This Year" },
   { value: "all", label: "All" },
 ];
 

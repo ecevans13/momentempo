@@ -46,7 +46,7 @@ export default function HeroSection({ firstName, stats }: HeroSectionProps) {
 
       <h1
         data-hero-item
-        className="relative z-10 text-5xl sm:text-7xl font-bold tracking-tight text-white text-center"
+        className="relative z-10 text-5xl sm:text-7xl font-bold tracking-tight text-white text-center font-display"
       >
         {firstName ? `${firstName}'s Journey` : "Your Journey"}
       </h1>

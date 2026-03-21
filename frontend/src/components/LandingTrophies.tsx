@@ -132,7 +132,7 @@ export default function LandingTrophies() {
         <div className="flex flex-col items-center px-6 max-w-5xl w-full">
           <h2
             ref={titleRef}
-            className="text-4xl sm:text-6xl font-bold text-white tracking-tight mb-12 opacity-0"
+            className="text-4xl sm:text-6xl font-bold text-white tracking-tight mb-12 opacity-0 font-display"
           >
             Personal Records
           </h2>

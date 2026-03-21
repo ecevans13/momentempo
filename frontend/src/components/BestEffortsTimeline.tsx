@@ -28,7 +28,11 @@ function formatSeconds(s: number): string {
 
 type ChartDatum = Record<string, string | number | undefined> & { date: string };
 
-export default function BestEffortsTimeline() {
+interface BestEffortsTimelineProps {
+  dateCutoff?: string; // ISO date string like "2025-06-01"
+}
+
+export default function BestEffortsTimeline({ dateCutoff }: BestEffortsTimelineProps) {
   const [data, setData] = useState<BestEffortsProgressionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +67,19 @@ export default function BestEffortsTimeline() {
     );
   }
 
-  const progression = data?.progression ?? {};
+  const rawProgression = data?.progression ?? {};
+
+  // Apply date filter
+  const progression: typeof rawProgression = {};
+  for (const [dist, efforts] of Object.entries(rawProgression)) {
+    const filtered = dateCutoff
+      ? efforts.filter((e) => e.date >= dateCutoff)
+      : efforts;
+    if (filtered.length >= 2) {
+      progression[dist] = filtered;
+    }
+  }
+
   const activeDistances = Object.keys(progression);
 
   if (activeDistances.length === 0) {

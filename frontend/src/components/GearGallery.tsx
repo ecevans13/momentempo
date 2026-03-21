@@ -9,6 +9,22 @@ import {
   formatPace,
 } from "../utils/format";
 
+// Map gear model names (lowercased) to local images
+const GEAR_IMAGES: [string, string][] = [
+  ["cloudsurfer next", "/gear/cloudsurfer-next.png"],
+  ["fuelcell rebel v5", "/gear/fuelcell-rebel-v5.png"],
+  ["cloudmonster", "/gear/cloudmonster-max.png"],
+];
+
+function getGearImage(gear: GearItem): string | null {
+  const model = (gear.model_name || "").toLowerCase();
+  const name = (gear.nickname || gear.name || "").toLowerCase();
+  for (const [key, img] of GEAR_IMAGES) {
+    if (model.includes(key) || name.includes(key)) return img;
+  }
+  return null;
+}
+
 const SPORT_ICONS: Record<string, string> = {
   Run: "\u{1F3C3}",
   TrailRun: "\u26F0\uFE0F",
@@ -59,28 +75,27 @@ export default function GearGallery({ onSelectActivity }: GearGalleryProps) {
     <section>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Gear Gallery</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {gear.map((g) => (
+        {gear.map((g) => {
+          const img = getGearImage(g);
+          return (
           <button
             key={g.id}
             type="button"
             onClick={() => setSelectedGearId(g.id)}
             className="w-full text-left rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10 dark:hover:shadow-indigo-500/20 hover:border-indigo-300/30 dark:hover:border-indigo-500/30 cursor-pointer"
           >
-            <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-2xl mb-3">
-              {"\u{1F45F}"}
-            </div>
-            {g.nickname ? (
-              <>
-                <h3 className="font-medium text-gray-900 dark:text-white truncate">{g.nickname}</h3>
-                <p className="text-xs text-gray-500 truncate">{g.name}</p>
-              </>
+            {img ? (
+              <div className="h-32 flex items-center justify-center mb-3">
+                <img src={img} alt={g.name} className="max-h-full max-w-full object-contain" loading="lazy" />
+              </div>
             ) : (
-              <>
-                <h3 className="font-medium text-gray-900 dark:text-white truncate">{g.name}</h3>
-                {(g.brand_name || g.model_name) && (
-                  <p className="text-xs text-gray-500 truncate">{[g.brand_name, g.model_name].filter(Boolean).join(" ")}</p>
-                )}
-              </>
+              <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-2xl mb-3">
+                {"\u{1F45F}"}
+              </div>
+            )}
+            <h3 className="font-medium text-gray-900 dark:text-white truncate">{g.nickname || g.name}</h3>
+            {(g.brand_name || g.model_name) && (
+              <p className="text-xs text-gray-500 truncate">{[g.brand_name, g.model_name].filter(Boolean).join(" ")}</p>
             )}
             <div className="mt-3 flex gap-4 text-sm text-gray-600 dark:text-gray-300">
               <span>{formatDistance(g.distance)}</span>
@@ -88,7 +103,8 @@ export default function GearGallery({ onSelectActivity }: GearGalleryProps) {
             </div>
             {g.retired && <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-gray-500">Retired</span>}
           </button>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -128,22 +144,22 @@ function GearDetail({
           Back to Gear
         </button>
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-lg bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-3xl shrink-0">
-            {"\u{1F45F}"}
-          </div>
-          <div className="min-w-0">
-            {gear.nickname ? (
-              <>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">{gear.nickname}</h1>
-                <p className="text-sm text-gray-500">{gear.name}</p>
-              </>
+          {(() => {
+            const img = getGearImage(gear);
+            return img ? (
+              <div className="w-20 h-20 shrink-0 flex items-center justify-center">
+                <img src={img} alt={gear.name} className="max-h-full max-w-full object-contain" />
+              </div>
             ) : (
-              <>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">{gear.name}</h1>
-                {(gear.brand_name || gear.model_name) && (
-                  <p className="text-sm text-gray-500">{[gear.brand_name, gear.model_name].filter(Boolean).join(" ")}</p>
-                )}
-              </>
+              <div className="w-14 h-14 rounded-lg bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-3xl shrink-0">
+                {"\u{1F45F}"}
+              </div>
+            );
+          })()}
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">{gear.nickname || gear.name}</h1>
+            {(gear.brand_name || gear.model_name) && (
+              <p className="text-sm text-gray-500">{[gear.brand_name, gear.model_name].filter(Boolean).join(" ")}</p>
             )}
           </div>
         </div>

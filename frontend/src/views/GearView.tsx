@@ -18,8 +18,11 @@ export default function GearView() {
   }
 
   return (
-    <ErrorBoundary>
-      <GearGallery onSelectActivity={setActivityId} />
-    </ErrorBoundary>
+    <>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-display mb-6">Gear</h1>
+      <ErrorBoundary>
+        <GearGallery onSelectActivity={setActivityId} />
+      </ErrorBoundary>
+    </>
   );
 }
