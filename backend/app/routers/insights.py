@@ -400,11 +400,14 @@ def whats_working(request: Request):
 @router.get("/fitness")
 def fitness_model(
     request: Request,
-    months: int = Query(6, ge=1, le=24),
+    months: int = Query(6, ge=1, le=120),
     lthr: int | None = Query(None, ge=100, le=220),
 ):
     """Fatigue & Freshness model: hrTSS, CTL (42d EMA), ATL (7d EMA), TSB."""
-    cutoff = int(time.time() - months * 30 * 86400)
+    # Fetch extra warmup data (90 days ~2x CTL constant) so EMA is primed
+    warmup_days = 90
+    display_cutoff = int(time.time() - months * 30 * 86400)
+    fetch_cutoff = int(time.time() - (months * 30 + warmup_days) * 86400)
 
     with _get_session(request) as session:
         stmt = (
@@ -417,7 +420,7 @@ def fitness_model(
             )
             .where(col(Activity.has_heartrate) == True)  # noqa: E712
             .where(col(Activity.average_heartrate).isnot(None))
-            .where(col(Activity.start_date_epoch) >= cutoff)
+            .where(col(Activity.start_date_epoch) >= fetch_cutoff)
             .order_by(col(Activity.start_date_epoch).asc())
         )
         activities = session.exec(stmt).all()
@@ -452,6 +455,7 @@ def fitness_model(
     sorted_dates = sorted(daily_tss.keys())
     start_date = datetime.strptime(sorted_dates[0], "%Y-%m-%d").date()
     end_date = datetime.strptime(sorted_dates[-1], "%Y-%m-%d").date()
+    display_start = datetime.utcfromtimestamp(display_cutoff).date()
 
     data = []
     ctl = 0.0
@@ -464,13 +468,15 @@ def fitness_model(
         ctl = ctl + (tss - ctl) / 42.0
         atl = atl + (tss - atl) / 7.0
         tsb = ctl - atl
-        data.append({
-            "date": ds,
-            "tss": round(tss, 1),
-            "ctl": round(ctl, 1),
-            "atl": round(atl, 1),
-            "tsb": round(tsb, 1),
-        })
+        # Only include in output after warmup period
+        if current >= display_start:
+            data.append({
+                "date": ds,
+                "tss": round(tss, 1),
+                "ctl": round(ctl, 1),
+                "atl": round(atl, 1),
+                "tsb": round(tsb, 1),
+            })
         current += timedelta(days=1)
 
     return {

@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, useEffect, useCallback } from "react";
 import { useTheme } from "./hooks/useTheme";
 import { triggerSync } from "./api/client";
 import Header from "./components/Header";
+import HamburgerMenu from "./components/HamburgerMenu";
 import Layout from "./components/Layout";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -9,17 +10,12 @@ const DashboardView = lazy(() => import("./views/DashboardView"));
 const InsightsView = lazy(() => import("./views/InsightsView"));
 const GearView = lazy(() => import("./views/GearView"));
 const TrophyView = lazy(() => import("./views/TrophyView"));
+const ActivitiesView = lazy(() => import("./views/ActivitiesView"));
+const HealthView = lazy(() => import("./views/HealthView"));
 const LandingView = lazy(() => import("./views/LandingView"));
 
 type View = "landing" | "app";
-type Tab = "dashboard" | "insights" | "gear" | "trophies";
-
-const TABS: { value: Tab; label: string }[] = [
-  { value: "dashboard", label: "Dashboard" },
-  { value: "insights", label: "Insights" },
-  { value: "gear", label: "Gear" },
-  { value: "trophies", label: "Trophies" },
-];
+type Tab = "dashboard" | "insights" | "gear" | "trophies" | "activities" | "health";
 
 function TabSpinner() {
   return (
@@ -67,10 +63,19 @@ export default function App() {
     }, 300);
   }, []);
 
+  const handleLandingNavigate = useCallback((t: Tab) => {
+    setTab(t);
+    handleEnterApp();
+  }, [handleEnterApp]);
+
   // Landing view: full-bleed, no header/tabs
   if (view === "landing") {
     return (
       <div className="min-h-screen bg-black text-gray-100">
+        {/* Floating hamburger menu */}
+        <div className="fixed top-4 left-4 z-50">
+          <HamburgerMenu currentTab={tab} onNavigate={handleLandingNavigate} />
+        </div>
         <ErrorBoundary>
           <Suspense fallback={<TabSpinner />}>
             <LandingView
@@ -85,31 +90,19 @@ export default function App() {
 
   return (
     <div className={`min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100 transition-opacity duration-300 ${appVisible ? "opacity-100" : "opacity-0"}`}>
-      <Header
-        theme={theme}
-        toggleTheme={toggleTheme}
-        firstName={firstName}
-        onLogoClick={handleReturnToLanding}
-      />
-
-      {/* Tab navigation */}
-      <div className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-black sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 flex gap-1">
-          {TABS.map((t) => (
-            <button
-              key={t.value}
-              onClick={() => setTab(t.value)}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === t.value
-                  ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+      {/* Top bar with hamburger + header controls */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800/50 bg-white dark:bg-black sticky top-0 z-30">
+        <div className="flex items-center gap-4">
+          <HamburgerMenu currentTab={tab} onNavigate={setTab} />
+          <button
+            onClick={handleReturnToLanding}
+            className="text-xl font-bold tracking-tight text-gray-900 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+          >
+            {firstName ? `${firstName}'s Journey` : "Your Journey"}
+          </button>
         </div>
-      </div>
+        <Header theme={theme} toggleTheme={toggleTheme} />
+      </header>
 
       <Layout>
         <ErrorBoundary>
@@ -118,6 +111,8 @@ export default function App() {
             {tab === "insights" && <InsightsView />}
             {tab === "gear" && <GearView />}
             {tab === "trophies" && <TrophyView />}
+            {tab === "activities" && <ActivitiesView />}
+            {tab === "health" && <HealthView />}
           </Suspense>
         </ErrorBoundary>
       </Layout>

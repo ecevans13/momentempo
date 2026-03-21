@@ -82,7 +82,7 @@ export default function LandingView({ firstName, onEnterApp }: LandingViewProps)
 
       {/* Transition into activities */}
       <div className="bg-black py-20 sm:py-28 text-center">
-        <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 font-display">
           Your Recent Activities
         </h2>
         <p className="text-gray-500 mb-8">

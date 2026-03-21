@@ -221,9 +221,9 @@ export default function LandingHeatmap() {
           {/* Title reveal */}
           <h2
             ref={titleRef}
-            className="mt-12 text-4xl sm:text-6xl font-bold text-white tracking-tight opacity-0"
+            className="mt-12 text-4xl sm:text-6xl font-bold text-white tracking-tight opacity-0 font-display"
           >
-            Consistency is Key
+            Consistency was Key
           </h2>
           <p
             ref={subtitleRef}

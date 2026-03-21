@@ -3,8 +3,11 @@ import ErrorBoundary from "../components/ErrorBoundary";
 
 export default function TrophyView() {
   return (
-    <ErrorBoundary>
-      <TrophyCase />
-    </ErrorBoundary>
+    <>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-display mb-6">Trophy Case</h1>
+      <ErrorBoundary>
+        <TrophyCase />
+      </ErrorBoundary>
+    </>
   );
 }
