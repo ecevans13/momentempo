@@ -25,11 +25,11 @@ export default function ElevationProfile({ splits, gpsAltitude, gpsDistance }: E
     gpsDistance.length > 1;
 
   if (useGPS) {
-    // Downsample GPS altitude and distance in parallel to ~500 points
-    const MAX_POINTS = 500;
+    // Downsample GPS altitude to match split count for a smooth profile
+    const targetPoints = Math.max(splits.length, 2);
     const [sampledDist, sampledAlt] =
-      gpsAltitude.length > MAX_POINTS
-        ? (downsampleParallel([gpsDistance, gpsAltitude], MAX_POINTS) as [number[], number[]])
+      gpsAltitude.length > targetPoints
+        ? (downsampleParallel([gpsDistance, gpsAltitude], targetPoints) as [number[], number[]])
         : [gpsDistance, gpsAltitude];
 
     const METERS_PER_MILE = 1609.344;
