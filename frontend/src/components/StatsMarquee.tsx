@@ -207,17 +207,17 @@ export default function StatsMarquee({ stats }: StatsMarqueeProps) {
     >
       <div
         ref={pinnedRef}
-        className="h-screen w-full flex flex-col justify-end select-none"
+        className="h-screen w-full flex flex-col justify-center select-none"
       >
-        {/* Marquee rows — anchored to vertical center area */}
-        <div className="flex-1 flex flex-col justify-center">
+        {/* Marquee rows */}
+        <div>
           <MarqueeRow items={rows[0]} direction="left" speed={35} />
           <MarqueeRow items={rows[1]} direction="right" speed={28} />
           <MarqueeRow items={rows[2]} direction="left" speed={32} />
         </div>
 
         {/* Title + subtitle reveal below marquee */}
-        <div className="text-center pb-20 sm:pb-28">
+        <div className="text-center mt-10 sm:mt-14">
           <h2
             ref={titleRef}
             className="text-4xl sm:text-6xl font-bold text-white tracking-tight opacity-0 font-display"
