@@ -1,73 +1,71 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
-import type { LifetimeStats } from "../api/types";
-import { formatDistance, formatDuration, formatElevation } from "../utils/format";
 import FloatingBrands from "./FloatingBrands";
+import Logo from "./Logo";
+import type { LifetimeStats } from "../api/types";
 
 interface HeroSectionProps {
-  firstName: string | null;
   stats: LifetimeStats;
 }
 
-export default function HeroSection({ firstName, stats }: HeroSectionProps) {
+export default function HeroSection({ stats: _stats }: HeroSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
+    if (prefersReduced) {
+      containerRef.current.querySelectorAll("[data-hero-logo], [data-hero-subtitle], [data-hero-scroll]")
+        .forEach((el) => ((el as HTMLElement).style.opacity = "1"));
+      return;
+    }
 
     const ctx = gsap.context(() => {
-      gsap.from("[data-hero-item]", {
-        y: 30,
+      gsap.from("[data-hero-logo]", {
+        scale: 0.8,
         opacity: 0,
-        duration: 0.8,
-        stagger: 0.15,
+        y: -40,
+        duration: 1.2,
         ease: "power3.out",
+      });
+
+      gsap.from("[data-hero-scroll]", {
+        opacity: 0,
+        duration: 0.6,
+        delay: 1.0,
+      });
+
+      gsap.set("[data-hero-subtitle]", { y: 20 });
+      gsap.to("[data-hero-subtitle]", {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        delay: 1.4,
+        ease: "power2.out",
       });
     }, containerRef);
 
     return () => ctx.revert();
   }, []);
 
-  const statItems = [
-    { label: "Activities", value: stats.total_activities.toLocaleString() },
-    { label: "Distance", value: formatDistance(stats.total_distance_m) },
-    { label: "Time", value: formatDuration(stats.total_moving_time_s) },
-    { label: "Elevation", value: formatElevation(stats.total_elevation_gain_m) },
-  ];
-
   return (
-    <section
-      ref={containerRef}
-      className="relative h-screen flex flex-col items-center justify-center bg-black px-6"
-    >
+    <section ref={containerRef} className="relative bg-black h-screen flex flex-col items-center justify-center px-6">
       <FloatingBrands />
 
-      <h1
-        data-hero-item
-        className="relative z-10 text-5xl sm:text-7xl font-bold tracking-tight text-white text-center font-display"
-      >
-        {firstName ? `${firstName}'s Journey` : "Your Journey"}
-      </h1>
-
-      <div
-        data-hero-item
-        className="relative z-10 mt-10 flex flex-wrap justify-center gap-8 sm:gap-12"
-      >
-        {statItems.map((s) => (
-          <div key={s.label} className="text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-indigo-400">
-              {s.value}
-            </div>
-            <div className="text-sm text-gray-500 mt-1">{s.label}</div>
-          </div>
-        ))}
+      <div data-hero-logo className="relative z-10">
+        <Logo className="h-28 sm:h-40 md:h-52 lg:h-60 w-auto" />
       </div>
 
-      {/* Scroll indicator */}
+      <p
+        data-hero-subtitle
+        className="relative z-10 text-gray-400 text-lg sm:text-xl md:text-2xl tracking-wide text-center max-w-2xl mt-8 opacity-0"
+        style={{ fontFamily: "'Sora', sans-serif" }}
+      >
+        Every mile logged. Every second earned. Your journey, quantified.
+      </p>
+
       <div
-        data-hero-item
+        data-hero-scroll
         className="absolute bottom-8 flex flex-col items-center gap-2 text-gray-500"
       >
         <span className="text-xs tracking-widest uppercase">Scroll</span>

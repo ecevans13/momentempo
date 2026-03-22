@@ -1,3 +1,6 @@
+import { useRef, useEffect } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import type { LifetimeStats } from "../api/types";
 import {
   formatDistance,
@@ -5,6 +8,8 @@ import {
   formatElevation,
   formatDurationWithSeconds,
 } from "../utils/format";
+
+gsap.registerPlugin(ScrollTrigger);
 
 /* ---------- Separator icons (inline SVGs) ---------- */
 
@@ -102,7 +107,6 @@ function MarqueeRow({
   direction: "left" | "right";
   speed?: number;
 }) {
-  // Render items with separator icons between them
   const renderSet = (keyPrefix: string) =>
     items.map((item, i) => {
       const Icon = SEPARATOR_ICONS[i % SEPARATOR_ICONS.length];
@@ -136,7 +140,6 @@ function MarqueeRow({
           width: "max-content",
         }}
       >
-        {/* Two copies for seamless loop */}
         {renderSet("a")}
         {renderSet("b")}
       </div>
@@ -146,12 +149,89 @@ function MarqueeRow({
 
 export default function StatsMarquee({ stats }: StatsMarqueeProps) {
   const rows = buildRows(stats);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const pinnedRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const subtitleRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (!sectionRef.current || !pinnedRef.current) return;
+
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      if (titleRef.current) gsap.set(titleRef.current, { opacity: 1, y: 0 });
+      if (subtitleRef.current) gsap.set(subtitleRef.current, { opacity: 1, y: 0 });
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 1,
+          pin: pinnedRef.current,
+        },
+      });
+
+      // Let the marquee rows play for a beat
+      tl.to({}, { duration: 1 });
+
+      // Title fades in
+      tl.fromTo(
+        titleRef.current,
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.4 },
+      );
+
+      // Subtitle fades in
+      tl.fromTo(
+        subtitleRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.3 },
+      );
+
+      // Hold so user can read
+      tl.to({}, { duration: 0.5 });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
 
   return (
-    <section className="bg-black py-6 sm:py-10 select-none">
-      <MarqueeRow items={rows[0]} direction="left" speed={35} />
-      <MarqueeRow items={rows[1]} direction="right" speed={28} />
-      <MarqueeRow items={rows[2]} direction="left" speed={32} />
+    <section
+      ref={sectionRef}
+      className="relative bg-black"
+      style={{ height: "250vh" }}
+    >
+      <div
+        ref={pinnedRef}
+        className="h-screen w-full flex flex-col justify-end select-none"
+      >
+        {/* Marquee rows — anchored to vertical center area */}
+        <div className="flex-1 flex flex-col justify-center">
+          <MarqueeRow items={rows[0]} direction="left" speed={35} />
+          <MarqueeRow items={rows[1]} direction="right" speed={28} />
+          <MarqueeRow items={rows[2]} direction="left" speed={32} />
+        </div>
+
+        {/* Title + subtitle reveal below marquee */}
+        <div className="text-center pb-20 sm:pb-28">
+          <h2
+            ref={titleRef}
+            className="text-4xl sm:text-6xl font-bold text-white tracking-tight opacity-0 font-display"
+          >
+            The Numbers Behind the Miles
+          </h2>
+          <p
+            ref={subtitleRef}
+            className="mt-4 text-gray-400 text-lg sm:text-xl opacity-0"
+          >
+            A lifetime of effort, distilled into the stats that matter
+          </p>
+        </div>
+      </div>
     </section>
   );
 }

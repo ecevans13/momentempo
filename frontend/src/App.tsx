@@ -3,6 +3,7 @@ import { useTheme } from "./hooks/useTheme";
 import { triggerSync } from "./api/client";
 import Header from "./components/Header";
 import HamburgerMenu from "./components/HamburgerMenu";
+import Logo from "./components/Logo";
 import Layout from "./components/Layout";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -96,9 +97,9 @@ export default function App() {
           <HamburgerMenu currentTab={tab} onNavigate={setTab} />
           <button
             onClick={handleReturnToLanding}
-            className="text-xl font-bold tracking-tight text-gray-900 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+            className="text-gray-900 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
           >
-            {firstName ? `${firstName}'s Journey` : "Your Journey"}
+            <Logo className="h-8 w-auto" />
           </button>
         </div>
         <Header theme={theme} toggleTheme={toggleTheme} />
