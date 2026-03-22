@@ -6,6 +6,7 @@ import LandingHeatmap from "../components/LandingHeatmap";
 import LandingFitness from "../components/LandingFitness";
 import LandingTrophies from "../components/LandingTrophies";
 import LandingGear from "../components/LandingGear";
+import DotCurtain from "../components/DotCurtain";
 import { useLandingData } from "../hooks/useLanding";
 
 interface LandingViewProps {
@@ -72,6 +73,7 @@ export default function LandingView({ firstName, onEnterApp }: LandingViewProps)
     <div
       className={`bg-black transition-opacity duration-500 ${transitioning ? "opacity-0" : "opacity-100"}`}
     >
+      <DotCurtain />
       <HeroSection stats={data.lifetime_stats} />
       <StatsMarquee stats={data.lifetime_stats} />
 
