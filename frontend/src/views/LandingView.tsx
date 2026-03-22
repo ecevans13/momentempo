@@ -72,7 +72,7 @@ export default function LandingView({ firstName, onEnterApp }: LandingViewProps)
     <div
       className={`bg-black transition-opacity duration-500 ${transitioning ? "opacity-0" : "opacity-100"}`}
     >
-      <HeroSection firstName={firstName} stats={data.lifetime_stats} />
+      <HeroSection stats={data.lifetime_stats} />
       <StatsMarquee stats={data.lifetime_stats} />
 
       <LandingHeatmap />
