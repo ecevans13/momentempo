@@ -2,7 +2,7 @@ import logging
 import logging.handlers
 import os
 from contextlib import asynccontextmanager
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -130,8 +130,11 @@ if _FRONTEND_DIST.exists():
     @app.get("/{full_path:path}")
     async def serve_spa(request: Request, full_path: str):
         """SPA catch-all: serve static files if they exist, otherwise index.html."""
-        # Check if the requested path maps to a real file in dist/
-        file_path = (_FRONTEND_DIST / full_path).resolve()
-        if full_path and file_path.is_relative_to(_FRONTEND_DIST.resolve()) and file_path.is_file():
+        # Sanitize: collapse to a safe relative path (strips .., leading /, etc.)
+        safe_path = PurePosixPath(full_path).as_posix()
+        if ".." in safe_path.split("/") or safe_path.startswith("/"):
+            return FileResponse(str(_FRONTEND_DIST / "index.html"))
+        file_path = _FRONTEND_DIST / safe_path
+        if safe_path and file_path.is_file():
             return FileResponse(str(file_path))
         return FileResponse(str(_FRONTEND_DIST / "index.html"))
