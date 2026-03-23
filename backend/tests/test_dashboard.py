@@ -47,8 +47,18 @@ def _make_activity(
 
 @pytest.fixture(name="seeded_session")
 def seeded_session_fixture(session: Session):
-    """Insert test activities covering various dates, sport types, and metrics."""
+    """Insert test activities covering various dates, sport types, and metrics.
+
+    The dashboard uses calendar period boundaries (start of week/month/year),
+    so "within year" activities use year-start-relative epochs to avoid crossing
+    the Jan 1 boundary when tests run early in the year.
+    """
+    from datetime import datetime, timezone
+
     now = int(time.time())
+    # Year cutoff is Jan 1 — compute epoch so within-year activities stay safe
+    year_start = int(datetime(datetime.now(timezone.utc).year, 1, 1,
+                              tzinfo=timezone.utc).timestamp())
 
     activities = [
         # Recent runs (within last week)
@@ -62,12 +72,11 @@ def seeded_session_fixture(session: Session):
         # Trail run 2 weeks ago (within month, outside week)
         _make_activity(4, "Trail Run", "TrailRun", 12000, 4800, 300, 2.5, True, 165.0,
                        start_date_epoch=now - 14 * 86400),
-        # Run 2 months ago (within year, outside month)
+        # Within current year: place shortly after Jan 1 (always before current month)
         _make_activity(5, "Long Run", "Run", 20000, 6000, 120, 3.33, True, 145.0,
-                       start_date_epoch=now - 60 * 86400),
-        # Ride 3 months ago
+                       start_date_epoch=year_start + 86400),
         _make_activity(6, "Century Ride", "Ride", 160000, 18000, 1500, 8.89, True, 140.0,
-                       start_date_epoch=now - 90 * 86400),
+                       start_date_epoch=year_start + 2 * 86400),
         # Very old activities (over 1 year ago)
         _make_activity(7, "Old Run", "Run", 10000, 3000, 100, 3.33, True, 152.0,
                        start_date_epoch=now - 400 * 86400),
