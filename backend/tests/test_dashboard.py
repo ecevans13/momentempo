@@ -46,42 +46,61 @@ def _make_activity(
 
 
 @pytest.fixture(name="seeded_session")
-def seeded_session_fixture(session: Session):
-    """Insert test activities covering various dates, sport types, and metrics.
+def seeded_session_fixture(session: Session, monkeypatch):
+    """Insert test activities aligned to fixed calendar period boundaries.
 
-    The dashboard uses calendar period boundaries (start of week/month/year),
-    so "within year" activities use year-start-relative epochs to avoid crossing
-    the Jan 1 boundary when tests run early in the year.
+    Uses a fixed reference time (Wed June 18, 2025 12:00 UTC) so that calendar
+    period boundaries are deterministic regardless of when the test actually runs.
     """
-    from datetime import datetime, timezone
+    from datetime import datetime, timedelta, timezone
 
-    now = int(time.time())
-    # Year cutoff is Jan 1 — compute epoch so within-year activities stay safe
-    year_start = int(datetime(datetime.now(timezone.utc).year, 1, 1,
-                              tzinfo=timezone.utc).timestamp())
+    # Fixed reference: Wednesday June 18, 2025 12:00 UTC
+    # - Wednesday: mid-week (not on Monday boundary)
+    # - 18th: mid-month (not on 1st boundary)
+    # - June: mid-year (not in January)
+    ref = datetime(2025, 6, 18, 12, 0, 0, tzinfo=timezone.utc)
+    ref_epoch = int(ref.timestamp())
+
+    # Calendar boundaries at the fixed reference time
+    ws = int((ref.replace(hour=0, minute=0, second=0, microsecond=0)
+              - timedelta(days=ref.weekday())).timestamp())   # Mon Jun 16
+    ms = int(ref.replace(day=1, hour=0, minute=0, second=0,
+                         microsecond=0).timestamp())          # Jun 1
+    ys = int(ref.replace(month=1, day=1, hour=0, minute=0,
+                         second=0, microsecond=0).timestamp()) # Jan 1
+
+    # Patch _period_cutoff and time.time in the dashboard module so all
+    # time-dependent queries align with our fixed reference time
+    def _fixed_cutoff(period: str):
+        return {"week": ws, "month": ms, "year": ys, "all": None}.get(period)
+
+    monkeypatch.setattr(
+        "backend.app.routers.dashboard._period_cutoff", _fixed_cutoff
+    )
+    monkeypatch.setattr("backend.app.routers.dashboard.time.time", lambda: ref_epoch)
 
     activities = [
-        # Recent runs (within last week)
+        # Within current week: after Mon Jun 16 00:00 (IDs 1, 2, 3)
+        # Ordered so ID 1 has the highest epoch (most recent)
         _make_activity(1, "Morning Run", "Run", 5000, 1500, 50, 3.33, True, 150.0,
-                       start_date_epoch=now - 86400),
+                       start_date_epoch=ws + 10800),
         _make_activity(2, "Evening Run", "Run", 8000, 2400, 80, 3.33, True, 160.0,
-                       start_date_epoch=now - 2 * 86400),
-        # Recent ride (within last week)
+                       start_date_epoch=ws + 7200),
         _make_activity(3, "Bike Commute", "Ride", 15000, 2700, 30, 5.56, False, None,
-                       start_date_epoch=now - 3 * 86400),
-        # Trail run 2 weeks ago (within month, outside week)
+                       start_date_epoch=ws + 3600),
+        # Within month but before week: after Jun 1, before Jun 16 (ID 4)
         _make_activity(4, "Trail Run", "TrailRun", 12000, 4800, 300, 2.5, True, 165.0,
-                       start_date_epoch=now - 14 * 86400),
-        # Within current year: place shortly after Jan 1 (always before current month)
+                       start_date_epoch=ms + 3600),
+        # Within year but before month: after Jan 1, before Jun 1 (IDs 5, 6)
         _make_activity(5, "Long Run", "Run", 20000, 6000, 120, 3.33, True, 145.0,
-                       start_date_epoch=year_start + 86400),
+                       start_date_epoch=ys + 2 * 86400),
         _make_activity(6, "Century Ride", "Ride", 160000, 18000, 1500, 8.89, True, 140.0,
-                       start_date_epoch=year_start + 2 * 86400),
-        # Very old activities (over 1 year ago)
+                       start_date_epoch=ys + 86400),
+        # Over 1 year ago: before Jan 1, 2025 (IDs 7, 8)
         _make_activity(7, "Old Run", "Run", 10000, 3000, 100, 3.33, True, 152.0,
-                       start_date_epoch=now - 400 * 86400),
+                       start_date_epoch=ref_epoch - 400 * 86400),
         _make_activity(8, "Old Hike", "Hike", 8000, 7200, 500, 1.11, False, None,
-                       start_date_epoch=now - 500 * 86400),
+                       start_date_epoch=ref_epoch - 500 * 86400),
     ]
     for a in activities:
         session.add(a)
