@@ -12,12 +12,12 @@ interface Brand {
 
 const BRANDS: Brand[] = [
   { name: "Runna", src: "/brands/runna.svg", top: "10%", left: "6%", width: "220px", duration: 28, opacity: 0.25 },
-  { name: "Strava", src: "/brands/strava.svg", top: "22%", left: "72%", width: "240px", duration: 34, opacity: 0.25 },
-  { name: "Fitbod", src: "/brands/fitbod.svg", top: "58%", left: "10%", width: "200px", duration: 30, opacity: 0.22 },
-  { name: "Nike", src: "/brands/nike.svg", top: "15%", left: "42%", width: "140px", duration: 38 },
-  { name: "Hevy", src: "/brands/hevy.svg", top: "68%", left: "70%", width: "110px", duration: 26 },
-  { name: "On", src: "/brands/on-running.svg", top: "40%", left: "82%", width: "100px", duration: 32, hideMobile: true },
-  { name: "New Balance", src: "/brands/new-balance.svg", top: "75%", left: "38%", width: "140px", duration: 36, hideMobile: true },
+  { name: "Strava", src: "/brands/strava-logo.png", top: "22%", left: "72%", width: "240px", duration: 34, opacity: 0.25 },
+  { name: "Fitbod", src: "/brands/fitbod-icon.png", top: "58%", left: "4%", width: "120px", duration: 30, opacity: 0.22 },
+  { name: "Nike", src: "/brands/nike.svg", top: "15%", left: "78%", width: "140px", duration: 38 },
+  { name: "Hevy", src: "/brands/hevy.svg", top: "68%", left: "75%", width: "110px", duration: 26 },
+  { name: "On", src: "/brands/on-cloud-icon.png", top: "40%", left: "2%", width: "120px", duration: 32, hideMobile: true },
+  { name: "New Balance", src: "/brands/new-balance.svg", top: "75%", left: "6%", width: "140px", duration: 36, hideMobile: true },
 ];
 
 export default function FloatingBrands() {
