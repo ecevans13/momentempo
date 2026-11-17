@@ -175,6 +175,19 @@ def test_whats_working_ignores_non_runs(client: TestClient, session: Session):
 
 # --- Fitness Model tests ---
 
+# Fitness tests hardcode start_date_local values in Jan–Mar 2026, but the
+# endpoint filters by time.time() (display window = last N months). Pin "now"
+# to Sun Mar 1, 2026 12:00 UTC so the hardcoded dates always fall inside the
+# window, no matter when the suite runs.
+FITNESS_FIXED_NOW = 1772366400  # Sun Mar 1, 2026 12:00 UTC
+
+
+@pytest.fixture
+def fitness_fixed_now(monkeypatch):
+    monkeypatch.setattr(time, "time", lambda: float(FITNESS_FIXED_NOW))
+    return FITNESS_FIXED_NOW
+
+
 def test_fitness_empty_db(client: TestClient):
     response = client.get("/api/insights/fitness")
     assert response.status_code == 200
@@ -183,6 +196,7 @@ def test_fitness_empty_db(client: TestClient):
     assert data["lthr_used"] is None
 
 
+@pytest.mark.usefixtures("fitness_fixed_now")
 def test_fitness_auto_lthr(client: TestClient, session: Session):
     now = int(time.time())
     _make_activity(
@@ -201,6 +215,7 @@ def test_fitness_auto_lthr(client: TestClient, session: Session):
     assert len(data["data"]) >= 1
 
 
+@pytest.mark.usefixtures("fitness_fixed_now")
 def test_fitness_user_lthr(client: TestClient, session: Session):
     now = int(time.time())
     _make_activity(
@@ -217,6 +232,7 @@ def test_fitness_user_lthr(client: TestClient, session: Session):
     assert data["lthr_used"] == 165
 
 
+@pytest.mark.usefixtures("fitness_fixed_now")
 def test_fitness_tss_calculation(client: TestClient, session: Session):
     now = int(time.time())
     _make_activity(
@@ -235,6 +251,7 @@ def test_fitness_tss_calculation(client: TestClient, session: Session):
     assert day_data[0]["tss"] == 100.0
 
 
+@pytest.mark.usefixtures("fitness_fixed_now")
 def test_fitness_ignores_no_hr(client: TestClient, session: Session):
     now = int(time.time())
     _make_activity(
@@ -250,6 +267,7 @@ def test_fitness_ignores_no_hr(client: TestClient, session: Session):
     assert data["data"] == []
 
 
+@pytest.mark.usefixtures("fitness_fixed_now")
 def test_fitness_ema_convergence(client: TestClient, session: Session):
     """With consistent daily training, CTL should grow toward the daily TSS value."""
     now = int(time.time())
