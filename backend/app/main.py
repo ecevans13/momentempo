@@ -6,7 +6,6 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
@@ -119,19 +118,12 @@ app.include_router(health_import.router)
 app.include_router(coach.router)
 
 # --- Static file serving for production ---
-# Mount the assets directory if the frontend has been built
+# Mount the frontend dist directory if the frontend has been built.
+# StaticFiles handles path sanitization internally (no traversal risk).
+# html=True serves index.html as the SPA fallback for unmatched routes.
 if _FRONTEND_DIST.exists():
     app.mount(
-        "/assets",
-        StaticFiles(directory=str(_FRONTEND_DIST / "assets")),
-        name="static-assets",
+        "/",
+        StaticFiles(directory=str(_FRONTEND_DIST), html=True),
+        name="spa",
     )
-
-    @app.get("/{full_path:path}")
-    async def serve_spa(request: Request, full_path: str):
-        """SPA catch-all: serve static files if they exist, otherwise index.html."""
-        # Check if the requested path maps to a real file in dist/
-        file_path = _FRONTEND_DIST / full_path
-        if full_path and file_path.is_file():
-            return FileResponse(str(file_path))
-        return FileResponse(str(_FRONTEND_DIST / "index.html"))
